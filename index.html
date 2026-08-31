@@ -1,0 +1,2141 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TONY Skill Builder App v2.0</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- JSZip -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- Marked.js for Markdown Preview -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: '#17365D',
+                        blue: '#2F75B5',
+                        cyan: '#00A6A6',
+                        gold: '#C6922B',
+                        graybg: '#F3F4F6'
+                    },
+                    fontFamily: {
+                        sans: ['"Noto Sans TC"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #F3F4F6; }
+        .hide { display: none !important; }
+        
+        /* Markdown Preview Styles */
+        .markdown-body h1 { font-size: 1.5em; font-weight: bold; margin-bottom: 0.5em; color: #17365D; border-bottom: 2px solid #00A6A6; padding-bottom: 0.2em; }
+        .markdown-body h2 { font-size: 1.25em; font-weight: bold; margin-top: 1em; margin-bottom: 0.5em; color: #2F75B5; }
+        .markdown-body h3 { font-size: 1.1em; font-weight: bold; margin-top: 0.8em; margin-bottom: 0.4em; color: #C6922B; }
+        .markdown-body p { margin-bottom: 1em; line-height: 1.6; }
+        .markdown-body ul { list-style-type: disc; padding-left: 1.5em; margin-bottom: 1em; }
+        .markdown-body table { width: 100%; border-collapse: collapse; margin-bottom: 1em; }
+        .markdown-body th, .markdown-body td { border: 1px solid #e5e7eb; padding: 0.5em; text-align: left; }
+        .markdown-body th { background-color: #f8fafc; color: #17365D; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Animations & Transitions */
+        .auth-form { transition: opacity 0.3s ease; }
+        .modal-content { animation: scaleIn 0.2s ease-out forwards; }
+        @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        
+        /* Stepper Active State */
+        .step-nav.active { background-color: #17365D; color: white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); transform: scale(1.1); border-color: transparent; z-index: 20; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden text-gray-800 bg-graybg">
+
+    <!-- Loading Overlay (Premium Blur) -->
+    <div id="global-loader" class="fixed inset-0 bg-navy/70 backdrop-blur-sm z-[200] flex flex-col items-center justify-center hide text-white transition-opacity duration-300">
+        <i class="fas fa-circle-notch fa-spin text-5xl text-gold mb-4 shadow-lg rounded-full"></i>
+        <p id="loader-text" class="text-xl font-medium tracking-wide">處理中...</p>
+    </div>
+
+    <!-- Custom Alert Modal -->
+    <div id="custom-alert" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[210] flex items-center justify-center hide">
+        <div class="modal-content bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm text-center m-4">
+            <h3 class="text-lg font-bold text-navy mb-3" id="alert-title">提示</h3>
+            <p class="text-gray-600 mb-6 whitespace-pre-wrap leading-relaxed" id="alert-message">訊息內容</p>
+            <button id="btn-close-alert" class="px-6 py-2 bg-navy text-white rounded-lg hover:bg-navy/90 w-full transition shadow-sm font-medium">確定</button>
+        </div>
+    </div>
+
+    <!-- Custom Confirm Modal -->
+    <div id="custom-confirm" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[210] flex items-center justify-center hide">
+        <div class="modal-content bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm text-center m-4">
+            <h3 class="text-lg font-bold text-red-600 mb-3"><i class="fas fa-exclamation-triangle mr-2"></i>確認操作</h3>
+            <p class="text-gray-600 mb-6 whitespace-pre-wrap leading-relaxed" id="confirm-message">您確定要執行此操作嗎？</p>
+            <div class="flex justify-center gap-3">
+                <button id="btn-cancel-confirm" class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 w-full transition font-medium">取消</button>
+                <button id="btn-ok-confirm" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 w-full transition shadow-sm font-medium">確定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Key Modal -->
+    <div id="api-modal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[190] flex items-center justify-center hide">
+        <div class="modal-content bg-white rounded-xl shadow-2xl p-6 w-full max-w-md m-4 border-t-4 border-gold">
+            <h2 class="text-2xl font-bold text-navy mb-3"><i class="fas fa-key text-gold mr-2"></i>設定 Gemini API Key</h2>
+            <div class="bg-blue/5 p-3 rounded-lg mb-4 border border-blue/10">
+                <p class="text-sm text-gray-600 mb-2">請輸入您的 Gemini API 金鑰。金鑰僅安全地儲存於您的瀏覽器本地端，不會回傳伺服器。</p>
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-blue hover:text-navy hover:underline text-sm font-medium flex items-center"><i class="fas fa-external-link-alt mr-1.5"></i>前往 Google AI Studio 申請免費金鑰</a>
+            </div>
+            <input type="password" id="gemini-key-input" placeholder="AIzaSy..." class="w-full border border-gray-300 rounded-lg p-3 mb-5 focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan transition">
+            <div class="flex justify-end gap-3">
+                <button id="btn-close-api-modal" class="px-5 py-2.5 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition font-medium">取消</button>
+                <button id="btn-save-api-key" class="px-5 py-2.5 bg-navy text-white rounded-lg hover:bg-navy/90 transition shadow-sm font-medium">儲存設定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- About TONY Modal -->
+    <div id="about-modal" class="fixed inset-0 bg-black/60 backdrop-blur-md z-[150] flex items-center justify-center hide p-4">
+        <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-4xl flex flex-col md:flex-row overflow-hidden relative">
+            <button id="btn-close-about" class="absolute top-4 right-4 text-gray-400 hover:text-navy z-20 bg-white/90 rounded-full w-8 h-8 flex items-center justify-center transition shadow-sm"><i class="fas fa-times text-lg"></i></button>
+            
+            <div class="md:w-2/5 bg-gradient-to-b from-gray-50 to-gray-100 p-8 flex flex-col items-center text-center border-r border-gray-200">
+                <div class="relative mb-6">
+                    <div class="absolute inset-0 bg-gold rounded-full transform translate-x-1 translate-y-1 opacity-20"></div>
+                    <img src="https://firebasestorage.googleapis.com/v0/b/k16-tony-ai-wisdom-platform.firebasestorage.app/o/assets%2F6av64EOvvqQNAIoXqcPfHC5BBeF3%2F1787580326393_ChatGPT%20Image%202026%E5%B9%B46%E6%9C%8819%E6%97%A5%20%E4%B8%8A%E5%8D%8811_16_14.png?alt=media&token=3c85de41-f36f-46e5-a97a-7bc7eb83a027" 
+                         onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name=TONY&background=17365D&color=fff&size=200&font-size=0.33'" 
+                         alt="TONY 楊文澤" 
+                         class="w-36 h-36 rounded-full object-cover border-4 border-white shadow-md relative z-10">
+                </div>
+                <h3 class="text-2xl font-bold text-navy tracking-wide">TONY 楊文澤 <span class="text-lg font-normal text-gray-500">老師</span></h3>
+                <p class="text-sm bg-blue/10 text-blue font-medium mt-3 mb-4 px-3 py-1 rounded-full border border-blue/20">資深數位行銷科技顧問</p>
+                <div class="text-sm text-gray-600 space-y-2 flex flex-col items-center w-full">
+                    <span class="flex items-center gap-2"><i class="fas fa-robot text-gold w-4"></i>生成式 AI 創作者</span>
+                    <span class="flex items-center gap-2"><i class="fas fa-lightbulb text-gold w-4"></i>創業導師</span>
+                </div>
+            </div>
+            
+            <div class="md:w-3/5 p-8 h-[60vh] md:h-[550px] overflow-y-auto">
+                <div class="space-y-7 text-sm text-gray-700">
+                    <div class="hover:bg-gray-50 p-3 rounded-lg transition -mx-3">
+                        <h4 class="text-navy font-bold flex items-center gap-2 mb-3"><i class="fas fa-briefcase text-gold text-lg"></i>現職 Current</h4>
+                        <ul class="space-y-2 text-gray-600 ml-7 list-disc">
+                            <li>龍華科大 <span class="font-medium text-gray-800">數位行銷講師</span></li>
+                            <li>智策慧 <span class="font-medium text-gray-800">品牌行銷科技顧問</span></li>
+                        </ul>
+                    </div>
+                    <div class="hover:bg-gray-50 p-3 rounded-lg transition -mx-3">
+                        <h4 class="text-navy font-bold flex items-center gap-2 mb-3"><i class="fas fa-history text-gold text-lg"></i>經歷 Experience</h4>
+                        <ul class="space-y-2 text-gray-600 ml-7 list-disc">
+                            <li>脈動心聯股份有限公司 <span class="font-medium text-gray-800">創辦人暨執行長</span></li>
+                            <li>宏碁集團建碁 AOPEN <span class="font-medium text-gray-800">整合營銷處處長 / 全球品牌行銷總監 / 企業發言人</span></li>
+                            <li>台灣數位看板多媒體聯盟 (DSMA) <span class="font-medium text-gray-800">副會長</span></li>
+                        </ul>
+                    </div>
+                    <div class="hover:bg-gray-50 p-3 rounded-lg transition -mx-3">
+                        <h4 class="text-navy font-bold flex items-center gap-2 mb-3"><i class="fas fa-graduation-cap text-gold text-lg"></i>學歷 Education</h4>
+                        <ul class="space-y-2 text-gray-600 ml-7 list-disc">
+                            <li>台大 EMBA <span class="font-medium text-gray-800">商學組</span></li>
+                            <li>美國 Arizona State University <span class="font-medium text-gray-800">互動多媒體設計</span></li>
+                            <li>北科大 <span class="font-medium text-gray-800">工業設計</span></li>
+                        </ul>
+                    </div>
+                    <div class="hover:bg-gray-50 p-3 rounded-lg transition -mx-3">
+                        <h4 class="text-navy font-bold flex items-center gap-2 mb-3"><i class="fas fa-chalkboard-teacher text-gold text-lg"></i>專家授課經歷</h4>
+                        <ul class="space-y-2 text-gray-600 ml-7 list-disc">
+                            <li>CPC 生產力中心 <span class="font-medium text-gray-800">經營管理顧問師班 / 中小企業成長創價能量 講師</span></li>
+                            <li>台大 EMBA / 長榮 EMBA / 北科大 / 政大 / 世新 <span class="font-medium text-gray-800">業師</span></li>
+                            <li>2021 MarTech 行銷科技行銷長認證班 <span class="font-medium text-gray-800">講師</span></li>
+                            <li>2021/2024/2025 T大使與產業尖兵 <span class="font-medium text-gray-800">講師</span></li>
+                            <li>2025 新光人壽 AI 工具應用 <span class="font-medium text-gray-800">企業內訓講師</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Design Review Modal (New) -->
+    <div id="review-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md z-[150] flex items-center justify-center hide p-4">
+        <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden relative flex flex-col h-[85vh]">
+            <button id="btn-close-review" class="absolute top-4 right-4 text-gray-400 hover:text-navy z-20 bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center transition shadow-sm"><i class="fas fa-times text-lg"></i></button>
+            
+            <div class="p-8 border-b border-gray-100 bg-gradient-to-r from-[#17365D] to-[#1a4273] text-white shrink-0">
+                <p class="text-cyan text-sm font-bold tracking-widest uppercase mb-2"><i class="fas fa-microchip mr-1"></i> 產品深度解析</p>
+                <h2 class="text-3xl font-bold mb-2">TONY Skill Builder 產品設計深度評析</h2>
+                <p class="text-gray-300">從「提示詞」到「企業級標準作業協議」的進化之路</p>
+            </div>
+            
+            <div class="p-8 overflow-y-auto flex-1 bg-gray-50">
+                <div class="max-w-3xl mx-auto markdown-body bg-white p-8 rounded-xl shadow-sm border border-gray-200">
+                    <p class="text-lg text-gray-700 leading-relaxed font-medium mb-6">作為一款輔助建構 AI 能力的工具，<strong>TONY Skill Builder</strong> 與市面上泛濫的「Prompt Generator（提示詞產生器）」有著本質上的區別。一般工具解決的是「如何把話說得好聽讓 AI 聽懂」，而 TONY Skill Builder 解決的則是「如何將人類的專業經驗，封裝成可重複、可驗證、可治理的系統流程」。</p>
+                    
+                    <h2 class="text-navy border-b-2 border-gold pb-2 mt-8 mb-4 flex items-center gap-2"><i class="fas fa-cogs text-gold"></i> 1. 核心思維：從「許願池模式」轉變為「系統工程思維」</h2>
+                    <ul class="space-y-3 text-gray-700">
+                        <li><strong class="text-red-500">一般產生器：</strong> 大多採用「許願池」或「填空題」設計。這種設計鼓勵使用者發散思維，最終產出的是一個「一次性」的高級 Prompt，依賴 AI 的隨機發揮。</li>
+                        <li><strong class="text-blue">TONY 的差異：</strong> 引入了獨創的<strong>「TONY 七字訣（叫、收、做、判、交、驗、停）」</strong>。這不僅僅是 UI 介面，更是一套強制的認知框架（Cognitive Framework）。它強迫使用者在提筆前，必須像一個軟體架構師一樣思考。</li>
+                    </ul>
+
+                    <h2 class="text-navy border-b-2 border-gold pb-2 mt-8 mb-4 flex items-center gap-2"><i class="fas fa-shield-alt text-gold"></i> 2. 治理與邊界：強調「不該做什麼」遠勝於「該做什麼」</h2>
+                    <ul class="space-y-3 text-gray-700">
+                        <li><strong class="text-red-500">一般產生器：</strong> 專注於「生成 (Generation)」，重點在於如何讓 AI 產出更多內容，極少涉獵錯誤處理。</li>
+                        <li><strong class="text-blue">TONY 的差異：</strong> 七字訣中的「判（決策例外）」、「驗（品質標準）」和「停（安全紅線）」，是市面工具幾乎看不到的設計。它預設了「AI 會犯錯」，要求預先定義防線，展現了資深顧問對於企業導入 AI 最大的痛點——<strong>風險控管與合規性</strong>的深刻理解。</li>
+                    </ul>
+
+                    <h2 class="text-navy border-b-2 border-gold pb-2 mt-8 mb-4 flex items-center gap-2"><i class="fas fa-box-open text-gold"></i> 3. 架構維度：將 Prompt 升級為「微型應用程式 (Micro-App)」</h2>
+                    <ul class="space-y-3 text-gray-700">
+                        <li><strong class="text-red-500">一般產生器：</strong> 最終交付物就是「一段純文字」。</li>
+                        <li><strong class="text-blue">TONY 的差異：</strong> v2.0 引入的<strong>檔案資源管理 (references, assets, scripts) 與 ZIP 封裝</strong>，是一個降維打擊的設計。這套系統直接對標了目前最前端的 Agentic Workflow 標準。匯出的 ZIP 不只是一份文件，而是一個「可以直接部署的技能包 (Skill Package)」。</li>
+                    </ul>
+
+                    <h2 class="text-navy border-b-2 border-gold pb-2 mt-8 mb-4 flex items-center gap-2"><i class="fas fa-graduation-cap text-gold"></i> 4. 產品定位：是「生產力工具」，更是「教育賦能平台」</h2>
+                    <ul class="space-y-3 text-gray-700">
+                        <li><strong class="text-red-500">一般產生器：</strong> 只是工具。使用者用完就走。</li>
+                        <li><strong class="text-blue">TONY 的差異：</strong> 這個系統本身就是一個「互動式教具」。使用者在填寫這七個步驟的過程中，其實正在接受一次完整的「AI 流程設計」培訓。這是一套「帶有觀點 (Opinionated)」的軟體，用產品設計在教育市場。</li>
+                    </ul>
+                    
+                    <div class="mt-10 p-6 bg-gradient-to-r from-blue/10 to-cyan/10 border-l-4 border-blue rounded-r-lg">
+                        <p class="text-lg font-bold text-navy mb-2"><i class="fas fa-lightbulb text-gold mr-2"></i> 總結評鑑</p>
+                        <p class="text-gray-700">一般人設計的 Skill 產生器是在「包裝 AI」，而您設計的 TONY Skill Builder 是在<strong>「標準化人類的專業」</strong>。它跨越了單純的「提示詞工程」，進入到了「工作流工程」的層次，這正是目前企業端從「AI 嚐鮮期」邁向「AI 落地期」所最急需的解方。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- === VIEW: LOGIN === -->
+    <div id="view-login" class="flex-1 flex flex-col items-center justify-center bg-gradient-to-br from-navy via-[#1a4273] to-[#0f243f] text-white relative overflow-y-auto py-10 w-full z-50">
+        <!-- Background Decoration -->
+        <div class="absolute inset-0 overflow-hidden pointer-events-none">
+            <div class="absolute -top-[20%] -right-[10%] w-[50%] h-[50%] rounded-full bg-blue/10 blur-[100px]"></div>
+            <div class="absolute -bottom-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-cyan/10 blur-[100px]"></div>
+        </div>
+
+        <div class="z-10 max-w-md w-full p-8 bg-white text-gray-800 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] m-4 relative border border-white/20">
+            
+            <div class="text-center mb-8">
+                <img src="https://i.postimg.cc/fT2sQW09/1.png" alt="TONY STUDIO Logo" class="h-16 mx-auto mb-4 object-contain">
+                <h1 class="text-3xl font-bold text-navy mb-1 tracking-tight">TONY Skill Builder</h1>
+                <p class="text-gray-500 text-sm font-medium">以七字訣為核心的 AI 工作流程設計平台<br><span class="text-cyan text-xs">v2.0 Enterprise</span></p>
+            </div>
+            
+            <!-- Login Form -->
+            <div id="auth-form-login" class="auth-form block">
+                <form id="form-login" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Email 信箱</label>
+                        <input type="email" id="login-email" required class="w-full border border-gray-300 rounded-lg p-3 focus:border-navy focus:outline-none focus:ring-1 focus:ring-navy text-sm transition bg-gray-50 focus:bg-white">
+                    </div>
+                    <div class="relative">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">密碼</label>
+                        <input type="password" id="login-password" required class="w-full border border-gray-300 rounded-lg p-3 pr-10 focus:border-navy focus:outline-none focus:ring-1 focus:ring-navy text-sm transition bg-gray-50 focus:bg-white">
+                        <button type="button" class="toggle-password absolute right-3 top-[34px] text-gray-400 hover:text-navy transition p-1" data-target="login-password">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="flex justify-end items-center text-xs">
+                        <a href="#" id="link-forgot" class="text-blue hover:text-navy font-medium hover:underline transition">忘記密碼？</a>
+                    </div>
+                    <button type="submit" class="w-full bg-navy text-white font-medium rounded-lg p-3 hover:bg-[#1a4273] transition shadow-md hover:shadow-lg mt-2">登入系統</button>
+                </form>
+                
+                <div class="mt-8 text-center text-sm border-t border-gray-100 pt-6">
+                    <span class="text-gray-500">還沒有專屬帳號嗎？</span>
+                    <a href="#" id="link-register" class="text-navy font-bold hover:underline ml-1">立即註冊</a>
+                </div>
+            </div>
+
+            <!-- Register Form -->
+            <div id="auth-form-register" class="auth-form hide">
+                <div class="flex items-center gap-2 mb-6 border-b border-gray-100 pb-3">
+                    <a href="#" id="link-back-login" class="text-gray-400 hover:text-navy transition p-1"><i class="fas fa-arrow-left"></i></a>
+                    <h3 class="text-xl font-bold text-navy">註冊新帳號</h3>
+                </div>
+                <form id="form-register" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">身分選擇</label>
+                        <select id="reg-identity" required class="w-full border border-gray-300 rounded-lg p-3 focus:border-navy focus:outline-none focus:ring-1 focus:ring-navy text-sm bg-gray-50 focus:bg-white transition cursor-pointer">
+                            <option value="">請選擇您的身分</option>
+                            <option value="TONY老師學員">TONY老師學員</option>
+                            <option value="一般訪客">一般訪客</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">真實姓名</label>
+                        <input type="text" id="reg-name" required placeholder="請填寫中文全名" class="w-full border border-gray-300 rounded-lg p-3 focus:border-navy focus:outline-none focus:ring-1 focus:ring-navy text-sm bg-gray-50 focus:bg-white transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Email 信箱</label>
+                        <input type="email" id="reg-email" required placeholder="這將作為您的登入帳號" class="w-full border border-gray-300 rounded-lg p-3 focus:border-navy focus:outline-none focus:ring-1 focus:ring-navy text-sm bg-gray-50 focus:bg-white transition">
+                    </div>
+                    <div class="relative">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">設定密碼 (至少6碼)</label>
+                        <input type="password" id="reg-password" required minlength="6" class="w-full border border-gray-300 rounded-lg p-3 pr-10 focus:border-navy focus:outline-none focus:ring-1 focus:ring-navy text-sm bg-gray-50 focus:bg-white transition">
+                        <button type="button" class="toggle-password absolute right-3 top-[34px] text-gray-400 hover:text-navy transition p-1" data-target="reg-password">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <div class="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-lg text-xs mt-2 flex items-start gap-2 shadow-sm">
+                        <i class="fas fa-info-circle mt-0.5 text-amber-600 text-sm"></i>
+                        <p class="leading-relaxed">溫馨提醒：註冊確認信有時會跑到「垃圾郵件匣」，請記得前往確認唷！</p>
+                    </div>
+                    <button type="submit" class="w-full bg-navy text-white font-medium rounded-lg p-3 hover:bg-[#1a4273] transition shadow-md hover:shadow-lg mt-6">註冊並發送驗證信</button>
+                </form>
+            </div>
+
+            <!-- Forgot Password Form -->
+            <div id="auth-form-forgot" class="auth-form hide">
+                <div class="flex items-center gap-2 mb-4 border-b border-gray-100 pb-3">
+                    <a href="#" id="link-back-login2" class="text-gray-400 hover:text-navy transition p-1"><i class="fas fa-arrow-left"></i></a>
+                    <h3 class="text-xl font-bold text-navy">重設密碼</h3>
+                </div>
+                <p class="text-sm text-gray-600 mb-6 leading-relaxed">請輸入您的註冊信箱，我們將寄送密碼重設連結給您。</p>
+                <form id="form-forgot" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5">Email 信箱</label>
+                        <input type="email" id="forgot-email" required class="w-full border border-gray-300 rounded-lg p-3 focus:border-navy focus:outline-none focus:ring-1 focus:ring-navy text-sm bg-gray-50 focus:bg-white transition">
+                    </div>
+                    <div class="bg-amber-50 border border-amber-200 text-amber-800 p-3 rounded-lg text-xs mt-2 flex items-start gap-2 shadow-sm">
+                        <i class="fas fa-info-circle mt-0.5 text-amber-600 text-sm"></i>
+                        <p class="leading-relaxed">溫馨提醒：密碼重設信有時會跑到「垃圾郵件匣」，請記得前往確認唷！</p>
+                    </div>
+                    <button type="submit" class="w-full bg-navy text-white font-medium rounded-lg p-3 hover:bg-[#1a4273] transition shadow-md mt-6">發送重設信</button>
+                </form>
+            </div>
+            
+            <div class="mt-8 text-center text-xs text-gray-400 leading-relaxed pt-2 flex flex-col gap-2">
+                <div class="flex justify-center gap-3 mb-2">
+                    <button id="btn-about-login" class="text-blue hover:text-navy font-medium transition flex items-center justify-center gap-1.5 bg-blue/5 px-3 py-1.5 rounded-full border border-blue/10">
+                        <i class="fas fa-user-tie"></i> 認識 TONY 顧問
+                    </button>
+                    <button id="btn-review-login" class="text-gold hover:text-navy font-medium transition flex items-center justify-center gap-1.5 bg-gold/5 px-3 py-1.5 rounded-full border border-gold/20">
+                        <i class="fas fa-search-plus"></i> 產品深度評析
+                    </button>
+                </div>
+                <p>© 2026 TONY STUDIO.<br>本教材由 TONY STUDIO 楊文澤顧問設計.<br>All Rights Reserved.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- === MAIN APP CONTAINER === -->
+    <div id="view-app" class="flex-1 flex w-full h-full hide bg-graybg">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-20 lg:w-64 bg-navy text-white flex flex-col transition-all duration-300 shadow-xl z-20 shrink-0 border-r border-[#1a4273]">
+            <div class="p-4 flex items-center justify-center lg:justify-start gap-3 border-b border-white/10 bg-[#122b4a]">
+                <img src="https://i.postimg.cc/fT2sQW09/1.png" alt="Logo" class="w-10 h-10 object-contain shrink-0 bg-white rounded p-1 shadow-sm">
+                <div class="hidden lg:block">
+                    <span class="font-bold text-lg tracking-wide block leading-tight">Skill Builder</span>
+                    <span class="text-[10px] text-cyan uppercase tracking-widest font-medium">v2.0 Workspace</span>
+                </div>
+            </div>
+            
+            <nav class="flex-1 py-6 flex flex-col gap-2 px-3 overflow-y-auto">
+                <a href="#" id="nav-dashboard" class="nav-item flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/10 transition group text-cyan bg-white/5 font-medium">
+                    <i class="fas fa-home text-lg w-6 text-center group-hover:scale-110 transition-transform"></i>
+                    <span class="hidden lg:block">專案儀表板</span>
+                </a>
+                <a href="#" id="nav-new-skill" class="nav-item flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/10 transition group text-gray-300 font-medium">
+                    <i class="fas fa-plus-square text-lg w-6 text-center group-hover:scale-110 transition-transform group-hover:text-gold"></i>
+                    <span class="hidden lg:block">建立新 Skill</span>
+                </a>
+                
+                <div class="my-3 border-t border-white/5 w-4/5 mx-auto"></div>
+                
+                <a href="#" id="nav-manual" class="nav-item flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-white/10 transition group text-gray-300 font-medium">
+                    <i class="fas fa-book text-lg w-6 text-center group-hover:scale-110 transition-transform group-hover:text-blue"></i>
+                    <span class="hidden lg:block">使用說明書</span>
+                </a>
+
+                <!-- Admin Only Nav -->
+                <a href="#" id="nav-admin" class="nav-item flex items-center gap-3 px-3 py-3 rounded-lg transition group hide mt-4 border border-gold/40 bg-gradient-to-r from-gold/10 to-transparent text-gold font-bold hover:bg-gold/20 shadow-sm">
+                    <i class="fas fa-shield-alt text-lg w-6 text-center group-hover:scale-110 transition-transform"></i>
+                    <span class="hidden lg:block">系統管理後台</span>
+                </a>
+
+                <div class="mt-auto pt-4 space-y-1">
+                    <a href="#" id="nav-about-sidebar" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition group text-gray-400 hover:text-white text-sm">
+                        <i class="fas fa-user-tie w-6 text-center"></i>
+                        <span class="hidden lg:block">關於 TONY 顧問</span>
+                    </a>
+                    <button id="btn-open-api-sidebar" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition text-gray-400 hover:text-white text-sm text-left">
+                        <i class="fas fa-key w-6 text-center"></i>
+                        <span class="hidden lg:block">API 金鑰設定</span>
+                    </button>
+                </div>
+            </nav>
+            
+            <div class="p-4 border-t border-white/10 bg-[#122b4a] flex flex-col gap-2">
+                <div class="flex items-center gap-3 px-2 py-1 rounded">
+                    <div class="w-9 h-9 rounded-full bg-gradient-to-br from-cyan to-blue flex items-center justify-center text-white font-bold shrink-0 shadow-inner border border-white/20" id="user-avatar-text">U</div>
+                    <div class="hidden lg:block overflow-hidden w-full">
+                        <p id="user-name" class="text-sm font-bold truncate text-white">User Name</p>
+                        <div class="flex items-center mt-0.5">
+                            <span id="user-role-badge" class="text-[9px] bg-white/20 px-1.5 py-0.5 rounded text-white tracking-widest font-medium">USER</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- 獨立的登出按鈕，確保手機版與電腦版皆可見 -->
+                <button id="btn-logout" class="w-full flex items-center justify-center lg:justify-start gap-3 px-2 lg:px-3 py-2 mt-1 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition text-sm">
+                    <i class="fas fa-sign-out-alt w-6 text-center text-lg lg:text-sm"></i>
+                    <span class="hidden lg:block font-medium">登出系統</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col overflow-hidden relative w-full bg-white shadow-[-10px_0_20px_rgba(0,0,0,0.05)] z-10 rounded-l-2xl">
+            
+            <!-- Topbar -->
+            <header class="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-8 z-10 shrink-0">
+                <h2 id="topbar-title" class="text-xl font-bold text-navy flex items-center gap-2">
+                    <span class="w-1.5 h-6 bg-gold rounded-full block mr-1" id="topbar-indicator"></span>
+                    <span id="topbar-title-text">儀表板</span>
+                </h2>
+                <div id="topbar-actions" class="flex items-center gap-4 hide">
+                    <div id="save-status" class="flex items-center gap-1.5 text-xs font-medium text-green-500 bg-green-50 px-2 py-1 rounded-full border border-green-100 transition-colors duration-300">
+                        <i class="fas fa-check-circle"></i> <span>已儲存</span>
+                    </div>
+                    <div class="h-6 w-px bg-gray-200"></div>
+                    <button id="btn-ai-draft" class="px-4 py-2 bg-gradient-to-r from-cyan to-blue text-white text-sm font-medium rounded-lg shadow-sm hover:shadow-md hover:-translate-y-px transition flex items-center gap-2">
+                        <i class="fas fa-magic"></i> AI 幫我寫
+                    </button>
+                    <button id="btn-export-zip" class="px-4 py-2 bg-navy text-white text-sm font-medium rounded-lg shadow-sm hover:bg-[#1a4273] transition flex items-center gap-2">
+                        <i class="fas fa-file-archive"></i> 匯出 ZIP
+                    </button>
+                    <button id="btn-save-project" class="px-4 py-2 border-2 border-navy text-navy text-sm font-bold rounded-lg hover:bg-navy/5 transition flex items-center gap-2">
+                        <i class="fas fa-save"></i> 儲存
+                    </button>
+                </div>
+            </header>
+
+            <!-- Dashboard View -->
+            <div id="content-dashboard" class="flex-1 overflow-auto p-8 block bg-gray-50/50">
+                <div class="max-w-7xl mx-auto">
+                    <div class="mb-8 border-b border-gray-200 pb-4">
+                        <h3 class="text-3xl font-bold text-navy mb-2 tracking-tight">您的 Skill 專案庫</h3>
+                        <p class="text-gray-500">管理、編輯與匯出您的 AI 技能定義檔</p>
+                    </div>
+                    
+                    <div id="project-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        <!-- Project Cards injected via JS -->
+                        <div class="col-span-full flex flex-col items-center justify-center py-20 text-gray-400">
+                            <i class="fas fa-spinner fa-spin text-3xl mb-4 text-cyan"></i>
+                            <p class="font-medium">載入專案中，請稍候...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Workspace View (The 7 Steps + File Manager) -->
+            <div id="content-workspace" class="flex-1 overflow-hidden hide flex w-full bg-white">
+                
+                <!-- Left: Form Area (7 Steps) -->
+                <div class="w-1/2 flex flex-col border-r border-gray-200 z-0 h-full bg-white relative">
+                    
+                    <!-- Basic Info -->
+                    <div class="p-5 border-b border-gray-100 bg-white shrink-0 relative z-10 shadow-sm">
+                        <input type="text" id="skill-name" placeholder="輸入 Skill 英文名稱 (如: marketing-copywriter)" class="w-full text-2xl font-bold text-navy bg-transparent border-none focus:outline-none mb-3 placeholder-gray-300" oninput="debouncedUpdateMarkdown()">
+                        <textarea id="skill-desc" placeholder="簡單描述這個 Skill 的主要任務與情境，這將幫助 AI 了解如何規劃框架..." class="w-full text-sm text-gray-600 bg-gray-50 border border-gray-100 rounded-lg p-3 focus:outline-none focus:ring-1 focus:ring-cyan focus:bg-white transition resize-none h-20" oninput="debouncedUpdateMarkdown()"></textarea>
+                    </div>
+
+                    <div class="flex flex-1 overflow-hidden">
+                        <!-- 7 Steps Navigation (Refined) -->
+                        <div class="w-20 bg-gray-50/80 border-r border-gray-100 flex flex-col items-center py-6 overflow-y-auto shrink-0 relative">
+                            <!-- Progress Line behind dots -->
+                            <div class="absolute w-[2px] bg-gray-200 top-10 bottom-10 left-1/2 transform -translate-x-1/2 z-0"></div>
+                            
+                            <div class="flex flex-col gap-6 z-10 w-full px-2">
+                                <button class="step-nav active w-12 h-12 mx-auto rounded-full flex flex-col items-center justify-center text-sm font-bold bg-navy text-white shadow-md transition-all duration-300 border-2 border-transparent relative" data-step="1" title="叫 (Trigger)">叫<span class="text-[9px] font-normal opacity-80 mt-0.5">Trigger</span></button>
+                                <button class="step-nav w-12 h-12 mx-auto rounded-full flex flex-col items-center justify-center text-sm font-bold bg-white text-gray-400 hover:text-navy border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 relative" data-step="2" title="收 (Input)">收<span class="text-[9px] font-normal opacity-80 mt-0.5">Input</span></button>
+                                <button class="step-nav w-12 h-12 mx-auto rounded-full flex flex-col items-center justify-center text-sm font-bold bg-white text-gray-400 hover:text-navy border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 relative" data-step="3" title="做 (Workflow)">做<span class="text-[9px] font-normal opacity-80 mt-0.5">Work</span></button>
+                                <button class="step-nav w-12 h-12 mx-auto rounded-full flex flex-col items-center justify-center text-sm font-bold bg-white text-gray-400 hover:text-navy border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 relative" data-step="4" title="判 (Decision)">判<span class="text-[9px] font-normal opacity-80 mt-0.5">Decide</span></button>
+                                <button class="step-nav w-12 h-12 mx-auto rounded-full flex flex-col items-center justify-center text-sm font-bold bg-white text-gray-400 hover:text-navy border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 relative" data-step="5" title="交 (Output)">交<span class="text-[9px] font-normal opacity-80 mt-0.5">Output</span></button>
+                                <button class="step-nav w-12 h-12 mx-auto rounded-full flex flex-col items-center justify-center text-sm font-bold bg-white text-gray-400 hover:text-navy border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 relative" data-step="6" title="驗 (Validation)">驗<span class="text-[9px] font-normal opacity-80 mt-0.5">Valid</span></button>
+                                <button class="step-nav w-12 h-12 mx-auto rounded-full flex flex-col items-center justify-center text-sm font-bold bg-white text-gray-400 hover:text-navy border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 relative" data-step="7" title="停 (Stop)">停<span class="text-[9px] font-normal opacity-80 mt-0.5">Stop</span></button>
+                            </div>
+                        </div>
+
+                        <!-- Form Panels -->
+                        <div class="flex-1 overflow-y-auto p-8 bg-white scroll-smooth relative" id="form-panels">
+                            <!-- Overlay to prevent edit before save for V2 features -->
+                            <div id="unsaved-overlay" class="absolute inset-0 bg-white/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center hide">
+                                <div class="bg-white p-6 rounded-xl shadow-xl border border-gray-200 text-center max-w-xs">
+                                    <i class="fas fa-save text-4xl text-gold mb-3"></i>
+                                    <h4 class="font-bold text-navy mb-2">請先儲存專案</h4>
+                                    <p class="text-sm text-gray-500 mb-4">在使用檔案資源管理功能前，請先點擊右上角「儲存」按鈕建立專案實體。</p>
+                                    <button onclick="document.getElementById('btn-save-project').click()" class="bg-navy text-white px-4 py-2 rounded-lg text-sm w-full hover:bg-navy/90">立即儲存</button>
+                                </div>
+                            </div>
+
+                            <!-- 1. 叫 -->
+                            <div class="step-panel block animate-[fadeIn_0.3s_ease-out]" id="panel-1">
+                                <div class="mb-6 border-b border-gray-100 pb-4">
+                                    <h3 class="text-2xl font-bold text-navy flex items-center gap-3 mb-2">
+                                        <span class="w-8 h-8 rounded-lg bg-gold text-white flex items-center justify-center text-sm shadow-sm">1</span> 叫 (Trigger)
+                                    </h3>
+                                    <p class="text-gray-500 text-sm">定義任務的觸發邊界。告訴 AI 什麼時候該啟動這個 Skill，什麼時候不該理會。</p>
+                                </div>
+                                <div class="space-y-6">
+                                    <div class="bg-blue/5 p-4 rounded-xl border border-blue/10">
+                                        <label class="block text-sm font-bold text-navy mb-2 flex items-center gap-2"><i class="fas fa-check-circle text-green-500"></i>應觸發案例 (Positive)</label>
+                                        <textarea id="f-trigger-pos" rows="3" class="w-full bg-white border border-gray-200 rounded-lg p-3 text-sm focus:border-cyan focus:ring-1 focus:ring-cyan transition resize-y" placeholder="例如：\n- 當使用者說：「幫我寫一篇FB貼文」\n- 當使用者提供一個產品網址並要求行銷文案" oninput="debouncedUpdateMarkdown()"></textarea>
+                                    </div>
+                                    <div class="bg-red-50 p-4 rounded-xl border border-red-100">
+                                        <label class="block text-sm font-bold text-navy mb-2 flex items-center gap-2"><i class="fas fa-times-circle text-red-400"></i>排除案例 (Negative)</label>
+                                        <textarea id="f-trigger-neg" rows="3" class="w-full bg-white border border-gray-200 rounded-lg p-3 text-sm focus:border-cyan focus:ring-1 focus:ring-cyan transition resize-y" placeholder="例如：\n- 當使用者問天氣資訊\n- 單純閒聊或問候" oninput="debouncedUpdateMarkdown()"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 2. 收 -->
+                            <div class="step-panel hide animate-[fadeIn_0.3s_ease-out]" id="panel-2">
+                                <div class="mb-6 border-b border-gray-100 pb-4">
+                                    <h3 class="text-2xl font-bold text-navy flex items-center gap-3 mb-2">
+                                        <span class="w-8 h-8 rounded-lg bg-gold text-white flex items-center justify-center text-sm shadow-sm">2</span> 收 (Input)
+                                    </h3>
+                                    <p class="text-gray-500 text-sm">定義執行前必須蒐集的資訊。如果缺漏資料，AI 該如何反問使用者？</p>
+                                </div>
+                                <div class="space-y-6">
+                                    <div>
+                                        <label class="block text-sm font-bold text-gray-700 mb-2">必要欄位 (Required Fields)</label>
+                                        <textarea id="f-input-req" rows="4" class="w-full bg-gray-50 focus:bg-white border border-gray-200 rounded-lg p-3 text-sm focus:border-cyan focus:ring-1 focus:ring-cyan transition resize-y" placeholder="條列必須收集的資訊：\n- 產品名稱與特色\n- 目標客群 (TA)\n- 輸出字數限制" oninput="debouncedUpdateMarkdown()"></textarea>
+                                    </div>
+                                    <div class="bg-amber-50 p-4 rounded-xl border border-amber-100">
+                                        <label class="block text-sm font-bold text-navy mb-2 flex items-center gap-2"><i class="fas fa-question-circle text-amber-500"></i>缺漏時的提問策略</label>
+                                        <textarea id="f-input-q" rows="3" class="w-full bg-white border border-gray-200 rounded-lg p-3 text-sm focus:border-cyan focus:ring-1 focus:ring-cyan transition resize-y" placeholder="例如：\n- 如果未提供目標客群，請友善詢問：「請問這份文案主要是寫給誰看的呢？」" oninput="debouncedUpdateMarkdown()"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 3. 做 -->
+                            <div class="step-panel hide animate-[fadeIn_0.3s_ease-out]" id="panel-3">
+                                <div class="mb-6 border-b border-gray-100 pb-4">
+                                    <h3 class="text-2xl font-bold text-navy flex items-center gap-3 mb-2">
+                                        <span class="w-8 h-8 rounded-lg bg-gold text-white flex items-center justify-center text-sm shadow-sm">3</span> 做 (Workflow)
+                                    </h3>
+                                    <p class="text-gray-500 text-sm">設計 AI 的核心工作步驟。請以數字條列，並使用「動詞」開頭明確指示動作。若有上傳參考資源，可在此指示 AI 讀取。</p>
+                                </div>
+                                <textarea id="f-workflow" rows="14" class="w-full bg-gray-50 focus:bg-white border border-gray-200 rounded-lg p-4 text-sm focus:border-cyan focus:ring-1 focus:ring-cyan transition resize-y font-mono leading-relaxed" placeholder="1. 分析輸入的產品賣點與優勢。\n2. 請讀取 references/brand_guideline.pdf，確認品牌語氣設定。\n3. 擬定 3 個不同切角的吸睛標題。\n4. 根據切角，撰寫對應的貼文主體。" oninput="debouncedUpdateMarkdown()"></textarea>
+                            </div>
+
+                            <!-- 4. 判 -->
+                            <div class="step-panel hide animate-[fadeIn_0.3s_ease-out]" id="panel-4">
+                                <div class="mb-6 border-b border-gray-100 pb-4">
+                                    <h3 class="text-2xl font-bold text-navy flex items-center gap-3 mb-2">
+                                        <span class="w-8 h-8 rounded-lg bg-gold text-white flex items-center justify-center text-sm shadow-sm">4</span> 判 (Decision)
+                                    </h3>
+                                    <p class="text-gray-500 text-sm">賦予 AI 判斷力。列出條件判斷與例外處理規則 (If / Then)。</p>
+                                </div>
+                                <div class="bg-purple-50 p-1 rounded-xl mb-4 text-xs text-purple-700 font-medium text-center border border-purple-100">好的規則格式：如果 (If) 發生A，則 (Then) 執行B。</div>
+                                <textarea id="f-decision" rows="10" class="w-full bg-gray-50 focus:bg-white border border-gray-200 rounded-lg p-4 text-sm focus:border-cyan focus:ring-1 focus:ring-cyan transition resize-y font-mono leading-relaxed" placeholder="- 如果產品屬於「醫療保健」類，則必須在結尾加上標準免責聲明。\n- 如果使用者要求字數超過 1000 字，則自動切分為上、下兩篇產出。\n- 如果提供的參考資料內容互相矛盾，以官方網站的數據為準。" oninput="debouncedUpdateMarkdown()"></textarea>
+                            </div>
+
+                            <!-- 5. 交 -->
+                            <div class="step-panel hide animate-[fadeIn_0.3s_ease-out]" id="panel-5">
+                                <div class="mb-6 border-b border-gray-100 pb-4">
+                                    <h3 class="text-2xl font-bold text-navy flex items-center gap-3 mb-2">
+                                        <span class="w-8 h-8 rounded-lg bg-gold text-white flex items-center justify-center text-sm shadow-sm">5</span> 交 (Output)
+                                    </h3>
+                                    <p class="text-gray-500 text-sm">簽訂輸出契約。明確定義最終產出的版面配置、結構與格式限制。</p>
+                                </div>
+                                <textarea id="f-output" rows="12" class="w-full bg-gray-50 focus:bg-white border border-gray-200 rounded-lg p-4 text-sm focus:border-cyan focus:ring-1 focus:ring-cyan transition resize-y font-mono leading-relaxed" placeholder="請嚴格使用 Markdown 格式輸出，結構必須包含：\n\n## 標題提案\n(提供 3 個短標題)\n\n## 貼文主體\n(請於文末附上 assets/company_logo.png 的引用連結)\n\n## 建議 Hashtags\n\n(若有指定模板，請指示 AI 將內容填入 assets/模板名稱.docx 中)" oninput="debouncedUpdateMarkdown()"></textarea>
+                            </div>
+
+                            <!-- 6. 驗 -->
+                            <div class="step-panel hide animate-[fadeIn_0.3s_ease-out]" id="panel-6">
+                                <div class="mb-6 border-b border-gray-100 pb-4">
+                                    <h3 class="text-2xl font-bold text-navy flex items-center gap-3 mb-2">
+                                        <span class="w-8 h-8 rounded-lg bg-gold text-white flex items-center justify-center text-sm shadow-sm">6</span> 驗 (Validation)
+                                    </h3>
+                                    <p class="text-gray-500 text-sm">設定品質檢查點。要求 AI 在輸出前，根據這些標準進行自我審查。</p>
+                                </div>
+                                <div class="bg-gray-100 p-4 rounded-xl border border-gray-200">
+                                    <textarea id="f-validation" rows="6" class="w-full bg-white border border-gray-300 rounded-lg p-3 text-sm focus:border-cyan focus:ring-1 focus:ring-cyan transition resize-y font-mono leading-relaxed" placeholder="交付前，請自行檢查：\n- [ ] 是否遺漏了使用者強調的核心賣點？\n- [ ] 語氣是否與指定的品牌人設一致？\n- [ ] 是否正確加上了要求的免責聲明？" oninput="debouncedUpdateMarkdown()"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- 7. 停 -->
+                            <div class="step-panel hide animate-[fadeIn_0.3s_ease-out]" id="panel-7">
+                                <div class="mb-6 border-b border-gray-100 pb-4">
+                                    <h3 class="text-2xl font-bold text-navy flex items-center gap-3 mb-2">
+                                        <span class="w-8 h-8 rounded-lg bg-red-600 text-white flex items-center justify-center text-sm shadow-sm">7</span> 停 (Stop)
+                                    </h3>
+                                    <p class="text-gray-500 text-sm">劃定安全紅線。什麼情況下 AI 必須拒絕執行、停止動作或請求人類指示？</p>
+                                </div>
+                                <div class="bg-red-50 p-4 rounded-xl border-2 border-red-200">
+                                    <textarea id="f-stop" rows="6" class="w-full bg-white border border-red-200 rounded-lg p-3 text-sm focus:border-red-500 focus:ring-1 focus:ring-red-500 transition resize-y font-mono leading-relaxed text-red-900 placeholder-red-300" placeholder="安全守則：\n- 絕對不可為了豐富內容而編造不實的產品功能或數據。\n- 若使用者要求生成涉及政治攻擊、暴力或色情內容，請立即終止流程並回覆「這超出我的服務範圍」。\n- 在未經人類確認前，不可透過工具實際發送電子郵件。" oninput="debouncedUpdateMarkdown()"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Markdown Preview & File Manager (Tabs) -->
+                <div class="w-1/2 bg-white flex flex-col relative border-l border-gray-200 shadow-[-5px_0_15px_rgba(0,0,0,0.02)] z-10">
+                    
+                    <!-- Tabs Header -->
+                    <div class="p-3 border-b border-gray-200 bg-gray-50/80 flex justify-between items-center z-10 shrink-0">
+                        <div class="flex gap-2 bg-gray-200/50 p-1 rounded-lg">
+                            <button id="tab-btn-md" class="px-4 py-1.5 text-sm font-bold rounded-md bg-white text-navy shadow-sm transition">
+                                <i class="fab fa-markdown mr-1.5 text-blue"></i>SKILL.md 預覽
+                            </button>
+                            <button id="tab-btn-files" class="px-4 py-1.5 text-sm font-bold rounded-md text-gray-500 hover:text-navy hover:bg-white/50 transition">
+                                <i class="fas fa-folder-open mr-1.5 text-gold"></i>資源檔案
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Tab Content 1: Markdown Preview -->
+                    <div class="flex-1 overflow-auto p-8 markdown-body text-sm bg-white block" id="tab-content-md">
+                        <div class="h-full flex flex-col items-center justify-center text-gray-300 opacity-50">
+                            <i class="fas fa-file-code text-6xl mb-4"></i>
+                            <p class="text-lg">左側輸入內容將在此處即時生成格式化文件</p>
+                        </div>
+                    </div>
+
+                    <!-- Tab Content 2: File Manager -->
+                    <div class="flex-1 overflow-auto bg-graybg p-6 hide flex flex-col" id="tab-content-files">
+                        <div class="bg-blue/10 border border-blue/20 rounded-xl p-4 mb-6 text-sm text-navy">
+                            <h4 class="font-bold mb-1"><i class="fas fa-info-circle mr-1"></i> TONY 顧問提示：這些檔案怎麼用？</h4>
+                            <ul class="list-disc ml-5 space-y-1 text-gray-700">
+                                <li><strong>references (知識庫)：</strong> 給 AI 讀的參考資料 (如 PDF, 產品規格書, 公司規定)。</li>
+                                <li><strong>assets (模板素材)：</strong> 給 AI 產出用的模板 (如 Logo 圖片, Word/PPT 公版檔案)。</li>
+                                <li><strong>scripts (自動化)：</strong> 需要精準執行的 Python 腳本或程式碼。</li>
+                            </ul>
+                            <p class="mt-2 text-blue font-medium">上傳後，只要在左側的「做」或「交」告訴 AI 檔名，匯出 ZIP 時系統就會自動幫您打包在一起！</p>
+                        </div>
+
+                        <!-- Upload Zone -->
+                        <div class="bg-white border-2 border-dashed border-gray-300 hover:border-blue rounded-xl p-6 text-center transition-colors shadow-sm mb-6 relative group">
+                            <input type="file" id="file-upload-input" class="hidden" multiple>
+                            <div class="flex flex-col items-center justify-center">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-300 group-hover:text-blue mb-3 transition"></i>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <span class="text-sm font-bold text-gray-600">上傳至：</span>
+                                    <select id="file-category-select" class="border border-gray-300 rounded p-1.5 text-sm focus:outline-none focus:border-blue bg-gray-50 text-navy font-medium">
+                                        <option value="references">references/ (知識庫)</option>
+                                        <option value="assets">assets/ (模板素材)</option>
+                                        <option value="scripts">scripts/ (自動化腳本)</option>
+                                    </select>
+                                </div>
+                                <button onclick="document.getElementById('file-upload-input').click()" class="px-5 py-2 bg-navy text-white text-sm font-medium rounded shadow hover:bg-[#1a4273] transition">
+                                    選擇檔案上傳
+                                </button>
+                                <p class="text-xs text-gray-400 mt-3">支援 PDF, DOCX, PPTX, PNG, JPG 等常見格式 (單檔限制建議 10MB 內)</p>
+                            </div>
+                            
+                            <!-- Upload Progress Overlay -->
+                            <div id="upload-progress-overlay" class="absolute inset-0 bg-white/90 rounded-xl flex flex-col items-center justify-center hide z-10">
+                                <i class="fas fa-spinner fa-spin text-3xl text-blue mb-2"></i>
+                                <p id="upload-progress-text" class="text-sm font-bold text-navy">上傳中...</p>
+                            </div>
+                        </div>
+
+                        <!-- File Lists -->
+                        <div class="flex-1 bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+                            <div class="p-3 border-b border-gray-200 bg-gray-50 font-bold text-gray-700 text-sm">
+                                <i class="fas fa-archive text-gray-400 mr-2"></i>已上傳的專案資源
+                            </div>
+                            <div class="flex-1 overflow-auto p-2" id="file-list-container">
+                                <div class="flex flex-col items-center justify-center h-full text-gray-400 text-sm">
+                                    <i class="fas fa-folder-open text-3xl mb-2 text-gray-200"></i>
+                                    尚未上傳任何檔案
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Admin Dashboard View -->
+            <div id="content-admin" class="flex-1 overflow-auto bg-graybg p-8 hide">
+                <div class="max-w-7xl mx-auto space-y-8">
+                    
+                    <!-- Admin Header -->
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-200 gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-navy flex items-center gap-3"><i class="fas fa-shield-alt text-gold text-3xl"></i> 系統管理後台</h2>
+                            <p class="text-gray-500 text-sm mt-1 ml-10">管理註冊會員權限與檢視 AI 商業數據分析</p>
+                        </div>
+                        <button id="btn-export-csv" class="px-5 py-2.5 bg-green-600 text-white font-medium rounded-lg shadow-sm hover:bg-green-700 hover:shadow transition flex items-center gap-2">
+                            <i class="fas fa-file-csv text-lg"></i> 匯出會員 CSV 名單
+                        </button>
+                    </div>
+
+                    <!-- User Management Table -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+                        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50/80 flex justify-between items-center">
+                            <h3 class="font-bold text-navy flex items-center gap-2"><i class="fas fa-users text-gray-400"></i> 註冊會員管理</h3>
+                            <span class="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-md" id="admin-user-count">共 0 名會員</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left">
+                                <thead class="text-xs text-gray-500 uppercase bg-gray-100 border-b border-gray-200">
+                                    <tr>
+                                        <th class="px-6 py-4">姓名 / Email</th>
+                                        <th class="px-6 py-4">註冊身分</th>
+                                        <th class="px-6 py-4">系統權限</th>
+                                        <th class="px-6 py-4 text-center">登入次數</th>
+                                        <th class="px-6 py-4">註冊時間</th>
+                                        <th class="px-6 py-4 text-right">操作管理</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-user-table-body" class="divide-y divide-gray-100">
+                                    <tr><td colspan="6" class="text-center py-12 text-gray-400"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>載入資料中...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- AI Business Analysis Section -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+                        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50/80 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                            <h3 class="font-bold text-navy flex items-center gap-2"><i class="fas fa-chart-line text-blue text-lg"></i> AI 商業數據分析洞察</h3>
+                            <div class="flex flex-wrap items-center gap-3">
+                                <div class="flex items-center bg-white border border-gray-300 rounded-lg p-1 shadow-sm text-sm">
+                                    <span class="px-2 text-gray-500">區間:</span>
+                                    <input type="date" id="ai-report-start" class="border-none bg-transparent focus:ring-0 text-gray-700 px-1 cursor-pointer">
+                                    <span class="text-gray-300 px-1">-</span>
+                                    <input type="date" id="ai-report-end" class="border-none bg-transparent focus:ring-0 text-gray-700 px-1 cursor-pointer">
+                                </div>
+                                <button id="btn-generate-report" class="px-4 py-2 bg-gradient-to-r from-cyan to-blue text-white font-medium text-sm rounded-lg hover:shadow-md transition">
+                                    <i class="fas fa-robot mr-1.5"></i> 產出分析
+                                </button>
+                                <button id="btn-export-word" class="px-4 py-2 bg-[#17365D] text-white font-medium text-sm rounded-lg hover:bg-[#1a4273] transition shadow-sm flex items-center gap-2 hide">
+                                    <i class="fas fa-file-word"></i> 匯出 Word
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-8 bg-gray-50">
+                            <div id="ai-report-content" class="markdown-body p-8 bg-white border border-gray-200 rounded-xl min-h-[300px] text-gray-700 shadow-sm transition-all">
+                                <div class="h-full flex flex-col items-center justify-center text-gray-300 py-16">
+                                    <div class="relative mb-6">
+                                        <i class="fas fa-brain text-6xl text-gray-200"></i>
+                                        <i class="fas fa-sparkles text-gold absolute -top-2 -right-4 text-xl"></i>
+                                    </div>
+                                    <p class="text-lg font-medium text-gray-400">設定起訖時間並點擊「產出分析」</p>
+                                    <p class="text-sm text-gray-400 mt-2">Gemini 將根據期間內的註冊與活躍數據，為您生成商業報告</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            
+            <!-- Instruction Manual View -->
+            <div id="content-manual" class="flex-1 overflow-auto bg-graybg p-6 lg:p-10 hide">
+                <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden relative">
+                    <!-- Manual Header -->
+                    <div class="bg-[#17365D] text-white p-10 text-center relative overflow-hidden">
+                        <div class="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiNmZmYiLz48L3N2Zz4=')]"></div>
+                        <h1 class="text-4xl font-bold mb-3 relative z-10 tracking-wide">TONY Skill 教學框架</h1>
+                        <p class="text-xl text-cyan font-medium relative z-10 tracking-widest uppercase">AI WORKFLOW DESIGN</p>
+                        <div class="w-16 h-1 bg-gold mx-auto my-6 relative z-10"></div>
+                        <p class="text-gray-300 relative z-10 text-lg">Skill.md 到底怎麼用？<br><span class="text-sm opacity-80">從模糊的 Markdown 指令，轉化為可教、可做、可驗證的 AI 標準作業協議</span></p>
+                    </div>
+
+                    <div class="p-10 lg:p-16 space-y-12">
+                        
+                        <!-- Section 1: 執行摘要 -->
+                        <section>
+                            <h2 class="text-2xl font-bold text-navy flex items-center gap-2 mb-4 border-b-2 border-cyan pb-2 w-max pr-6"><i class="fas fa-file-alt text-gold"></i> 執行摘要</h2>
+                            <p class="text-gray-700 leading-relaxed mb-4">
+                                <strong>Skill.md 是寫給 AI 執行的「標準作業協議」</strong>，不是一般提示詞，也不只是操作手冊。<br>
+                                Skill 的彈性是一把雙面刃：它讓不同專業流程都能被封裝，也讓初學者不知道從哪裡開始。真正可教學的做法，不是要求學生自由發揮，而是提供固定的思考欄位，再讓內容依任務調整。
+                            </p>
+                            <p class="text-gray-700 leading-relaxed font-medium">
+                                本系統採用「TONY Skill 七字訣：叫、收、做、判、交、驗、停」，用七個問題完成一份可執行、可重複、可治理的 Skill。
+                            </p>
+                        </section>
+
+                        <!-- Section 2: 釐清概念 -->
+                        <section>
+                            <h2 class="text-2xl font-bold text-navy flex items-center gap-2 mb-4 border-b-2 border-cyan pb-2 w-max pr-6"><i class="fas fa-balance-scale text-gold"></i> 1 | 先釐清：Skill 不是什麼</h2>
+                            <div class="overflow-x-auto mb-4 rounded-xl border border-gray-200 shadow-sm">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="bg-gray-50 text-navy uppercase font-bold border-b border-gray-200">
+                                        <tr><th class="p-4">AI 元素</th><th class="p-4">企業角色</th><th class="p-4">主要用途</th></tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100 text-gray-700">
+                                        <tr class="hover:bg-blue/5 transition"><td class="p-4 font-medium text-navy">Prompt</td><td class="p-4">一次性工作指令</td><td class="p-4">處理當下單一任務</td></tr>
+                                        <tr class="hover:bg-blue/5 transition"><td class="p-4 font-medium text-navy">GEM / Custom Agent</td><td class="p-4">具有角色與知識的 AI 員工</td><td class="p-4">持續對話、解題與陪伴</td></tr>
+                                        <tr class="hover:bg-blue/5 transition bg-blue/5 border-l-4 border-blue"><td class="p-4 font-bold text-blue">Skill</td><td class="p-4 font-bold">標準作業流程 SOP</td><td class="p-4 font-bold">讓相同任務穩定重複執行</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="bg-gold/10 p-4 rounded-lg text-navy font-bold text-center border border-gold/30">
+                                💡 一句話記憶：GEM 比較像「一個人」；Skill 比較像「這個人採用的工作方法」。
+                            </div>
+                        </section>
+
+                        <!-- Section 3: 架構 -->
+                        <section>
+                            <h2 class="text-2xl font-bold text-navy flex items-center gap-2 mb-4 border-b-2 border-cyan pb-2 w-max pr-6"><i class="fas fa-folder-tree text-gold"></i> 3 | Skill 資料夾：一個指揮中心、四個支援部門 (v2.0 新增)</h2>
+                            <p class="text-gray-700 leading-relaxed mb-4">
+                                在 v2.0 企業版中，我們不僅支援文字指令，更加入了強大的<strong>雲端檔案管理與自動打包</strong>功能。一個完整的 Skill 就像一個微型應用程式，包含指揮中心與四個支援部門：
+                            </p>
+                            <div class="bg-gray-800 text-green-400 p-6 rounded-xl font-mono text-sm leading-loose shadow-inner mb-6 overflow-x-auto">
+                                <div class="text-white mb-2">my-skill/</div>
+                                <div>├── <span class="text-yellow-300 font-bold">SKILL.md</span>             <span class="text-gray-400"># 指揮中心：必要 (您在左側七步完成的內容)</span></div>
+                                <div>├── <span class="text-blue-300 font-bold">references/</span>            <span class="text-gray-400"># 知識庫：給 AI 讀的 (如 PDF 規章、過去的行銷案例)</span></div>
+                                <div>├── <span class="text-blue-300 font-bold">scripts/</span>               <span class="text-gray-400"># 自動化機器：選用 (需精準執行的 Python/JS 腳本)</span></div>
+                                <div>├── <span class="text-blue-300 font-bold">assets/</span>                <span class="text-gray-400"># 模板素材：產出要套用的 (如公司 Logo、Word/PPT 模板)</span></div>
+                                <div>└── agents/openai.yaml     <span class="text-gray-400"># UI 名牌與啟動政策：選用</span></div>
+                            </div>
+                            <div class="bg-blue/5 p-4 border-l-4 border-blue rounded-r-lg shadow-sm">
+                                <p class="text-navy font-bold mb-2"><i class="fas fa-lightbulb text-gold mr-1"></i> v2.0 實戰技巧：如何在七字訣中呼叫這些檔案？</p>
+                                <p class="text-gray-700 text-sm leading-relaxed mb-2">
+                                    您現在可以在右側的「資源檔案」分頁，直接將檔案上傳到雲端。上傳後，請在左側的文字框這樣指示 AI：
+                                </p>
+                                <ul class="list-disc ml-5 space-y-1 text-sm text-gray-700 font-medium">
+                                    <li><strong>在【做】(Workflow)：</strong>「請讀取 <code>references/brand_guideline.pdf</code>，確認語氣不可違反品牌規定。」</li>
+                                    <li><strong>在【交】(Output)：</strong>「請將完成的文字，填入 <code>assets/monthly_report.docx</code> 的格式中，並在右上角貼上 <code>assets/logo.png</code>。」</li>
+                                </ul>
+                                <p class="text-gray-600 text-sm mt-3">💡 當您點擊「匯出 ZIP」時，系統會自動將 <code>SKILL.md</code> 與這些雲端檔案完美打包在一起！</p>
+                            </div>
+                        </section>
+
+                        <!-- Section 4: 七字訣詳解 -->
+                        <section>
+                            <h2 class="text-2xl font-bold text-navy flex items-center gap-2 mb-6 border-b-2 border-cyan pb-2 w-max pr-6"><i class="fas fa-star text-gold"></i> 4 | TONY Skill 七字訣</h2>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Card 1 -->
+                                <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition group">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div class="w-10 h-10 rounded-full bg-navy text-white flex items-center justify-center font-bold text-lg group-hover:scale-110 transition">叫</div>
+                                        <h4 class="font-bold text-lg text-navy">Trigger (何時啟動?)</h4>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">列出正向觸發語意、排除情境與相近任務邊界。</p>
+                                    <p class="text-xs bg-gray-100 p-2 rounded text-gray-500 font-mono">例: 當要求每日AI晨報時使用; 單一工具操作教學不使用。</p>
+                                </div>
+                                <!-- Card 2 -->
+                                <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition group">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div class="w-10 h-10 rounded-full bg-navy text-white flex items-center justify-center font-bold text-lg group-hover:scale-110 transition">收</div>
+                                        <h4 class="font-bold text-lg text-navy">Input (需要收什麼?)</h4>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">定義必要、可選與可推定輸入；只問會影響結果的缺漏。</p>
+                                    <p class="text-xs bg-gray-100 p-2 rounded text-gray-500 font-mono">例: 日期、讀者、地區、篇幅。</p>
+                                </div>
+                                <!-- Card 3 -->
+                                <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition group">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div class="w-10 h-10 rounded-full bg-navy text-white flex items-center justify-center font-bold text-lg group-hover:scale-110 transition">做</div>
+                                        <h4 class="font-bold text-lg text-navy">Workflow (依什麼步驟?)</h4>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">用動詞描述順序、資料來源、工具選擇與人工節點。</p>
+                                    <p class="text-xs bg-gray-100 p-2 rounded text-gray-500 font-mono">例: 1.搜尋 2.查核 3.分類 4.撰寫 5.審閱。</p>
+                                </div>
+                                <!-- Card 4 -->
+                                <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition group">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div class="w-10 h-10 rounded-full bg-navy text-white flex items-center justify-center font-bold text-lg group-hover:scale-110 transition">判</div>
+                                        <h4 class="font-bold text-lg text-navy">Decision (差異怎麼選?)</h4>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">用 if/then 規則處理衝突、例外、替代方案與不確定性。</p>
+                                    <p class="text-xs bg-gray-100 p-2 rounded text-gray-500 font-mono">例: 官方與媒體衝突時，以官方資料為主。</p>
+                                </div>
+                                <!-- Card 5 -->
+                                <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition group">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div class="w-10 h-10 rounded-full bg-navy text-white flex items-center justify-center font-bold text-lg group-hover:scale-110 transition">交</div>
+                                        <h4 class="font-bold text-lg text-navy">Output (最後交付什麼?)</h4>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">定義內容欄位、檔案格式、語言、篇幅、命名與順序。</p>
+                                    <p class="text-xs bg-gray-100 p-2 rounded text-gray-500 font-mono">例: 摘要、事實、判斷、來源，以 Markdown 表格輸出。</p>
+                                </div>
+                                <!-- Card 6 -->
+                                <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition group">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div class="w-10 h-10 rounded-full bg-navy text-white flex items-center justify-center font-bold text-lg group-hover:scale-110 transition">驗</div>
+                                        <h4 class="font-bold text-lg text-navy">Validation (如何證明做好?)</h4>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">建立交付前檢查清單與可觀察的驗收標準。</p>
+                                    <p class="text-xs bg-gray-100 p-2 rounded text-gray-500 font-mono">例: 日期正確、數字有來源、推測未冒充事實。</p>
+                                </div>
+                                <!-- Card 7 -->
+                                <div class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition group md:col-span-2 md:w-1/2 md:mx-auto border-red-200">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div class="w-10 h-10 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-lg group-hover:scale-110 transition">停</div>
+                                        <h4 class="font-bold text-lg text-red-700">Stop (什麼時候必須停?)</h4>
+                                    </div>
+                                    <p class="text-sm text-gray-600 mb-2">定義資料不足、權限、風險、外部動作與人工審核的停止條件。</p>
+                                    <p class="text-xs bg-red-50 p-2 rounded text-red-800 font-mono">例: 需要發信、公開發布或資料矛盾時，暫停請示人類。</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Section 5: 品質指標 -->
+                        <section>
+                            <h2 class="text-2xl font-bold text-navy flex items-center gap-2 mb-4 border-b-2 border-cyan pb-2 w-max pr-6"><i class="fas fa-check-double text-gold"></i> 7 | 好的 Skill 看四個穩定度</h2>
+                            <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                                <table class="w-full text-sm text-left">
+                                    <thead class="bg-gray-50 text-navy uppercase font-bold border-b border-gray-200">
+                                        <tr><th class="p-4">品質指標</th><th class="p-4">檢查問題</th><th class="p-4 text-red-600">常見失敗原因</th></tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100 text-gray-700">
+                                        <tr class="hover:bg-blue/5 transition"><td class="p-4 font-bold text-navy whitespace-nowrap">啟動穩定度</td><td class="p-4">該啟動時會啟動？不該啟動時會誤觸？</td><td class="p-4 text-red-500 text-xs">description 太廣或只寫功能口號</td></tr>
+                                        <tr class="hover:bg-blue/5 transition"><td class="p-4 font-bold text-navy whitespace-nowrap">流程穩定度</td><td class="p-4">不同時間執行，關鍵步驟是否一致？</td><td class="p-4 text-red-500 text-xs">流程只有方向，沒有先後與決策點</td></tr>
+                                        <tr class="hover:bg-blue/5 transition"><td class="p-4 font-bold text-navy whitespace-nowrap">產出穩定度</td><td class="p-4">格式、品質、完整性是否一致？</td><td class="p-4 text-red-500 text-xs">只寫「產出專業結果」，沒有輸出契約</td></tr>
+                                        <tr class="hover:bg-blue/5 transition"><td class="p-4 font-bold text-navy whitespace-nowrap">邊界穩定度</td><td class="p-4">缺資料、衝突、高風險時會停嗎？</td><td class="p-4 text-red-500 text-xs">沒有停損、權限與人工審核規則</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-6 bg-gradient-to-r from-navy to-[#1a4273] p-6 rounded-xl text-white text-center shadow-md">
+                                <p class="text-lg font-medium tracking-wide">
+                                    <i class="fas fa-quote-left text-gold opacity-50 mr-2 text-xl"></i>
+                                    好的 Skill：在該自由的地方保留判斷力，在不能出錯的地方建立明確約束。
+                                    <i class="fas fa-quote-right text-gold opacity-50 ml-2 text-xl"></i>
+                                </p>
+                            </div>
+                        </section>
+
+                    </div>
+                    
+                    <div class="bg-gray-50 border-t border-gray-200 p-6 text-center text-sm text-gray-400">
+                        TONY Skill Framework © 2026 Tony Studio. 
+                    </div>
+                </div>
+            </div>
+            
+        </main>
+    </div>
+
+    <!-- Scripts: Firebase & App Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { 
+            getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, 
+            onAuthStateChanged, signOut, sendEmailVerification, sendPasswordResetEmail 
+        } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { 
+            getFirestore, collection, doc, setDoc, getDocs, getDoc, 
+            serverTimestamp, query, orderBy, deleteDoc 
+        } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { 
+            getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject, listAll 
+        } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-storage.js";
+
+        // 強制鎖定專案 ID 與配置 (不受 Canvas 環境變數污染)
+        const appId = 'k27-tony-skill-builder'; 
+        const firebaseConfig = {
+            apiKey: "AIzaSyCEcmnNFdC5TZinDJ7d3UQhjDMmnG3CvRY",
+            authDomain: "k27-tony-skill-builder.firebaseapp.com",
+            projectId: "k27-tony-skill-builder",
+            storageBucket: "k27-tony-skill-builder.firebasestorage.app",
+            messagingSenderId: "872630887403",
+            appId: "1:872630887403:web:1f510c1e2e62405694efae"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app); 
+
+        // Core State
+        let currentUser = null;
+        let currentUserProfile = null;
+        let currentProject = null;
+        let isUnsaved = false;
+        
+        // Async Action Locks (Crucial for preventing race conditions)
+        const locks = {
+            isRegistering: false,
+            isGeneratingAI: false,
+            isSaving: false,
+            isUploading: false
+        };
+        
+        // RBAC Definition
+        const SUPER_ADMIN_EMAIL = "mindnodeai@gmail.com";
+
+        // Form Fields Definition
+        const fields = {
+            name: document.getElementById('skill-name'),
+            desc: document.getElementById('skill-desc'),
+            triggerPos: document.getElementById('f-trigger-pos'),
+            triggerNeg: document.getElementById('f-trigger-neg'),
+            inputReq: document.getElementById('f-input-req'),
+            inputQ: document.getElementById('f-input-q'),
+            workflow: document.getElementById('f-workflow'),
+            decision: document.getElementById('f-decision'),
+            output: document.getElementById('f-output'),
+            validation: document.getElementById('f-validation'),
+            stop: document.getElementById('f-stop')
+        };
+
+        const UI = {
+            login: document.getElementById('view-login'),
+            app: document.getElementById('view-app'),
+            dash: document.getElementById('content-dashboard'),
+            workspace: document.getElementById('content-workspace'),
+            adminView: document.getElementById('content-admin'),
+            manualView: document.getElementById('content-manual'),
+            
+            topbarTitle: document.getElementById('topbar-title-text'),
+            topbarIndicator: document.getElementById('topbar-indicator'),
+            topbarActions: document.getElementById('topbar-actions'),
+            loader: document.getElementById('global-loader'),
+            loaderText: document.getElementById('loader-text'),
+            
+            alertModal: document.getElementById('custom-alert'),
+            alertMsg: document.getElementById('alert-message'),
+            confirmModal: document.getElementById('custom-confirm'),
+            confirmMsg: document.getElementById('confirm-message'),
+            confirmCallback: null,
+            apiModal: document.getElementById('api-modal'),
+            aboutModal: document.getElementById('about-modal'),
+            reviewModal: document.getElementById('review-modal'),
+            
+            show(el) { el.classList.remove('hide'); },
+            hide(el) { el.classList.add('hide'); },
+            showLoader(msg = "處理中...") { 
+                this.loaderText.innerText = msg; 
+                this.show(this.loader);
+                setTimeout(() => this.loader.classList.remove('opacity-0'), 10);
+            },
+            hideLoader() { 
+                this.loader.classList.add('opacity-0');
+                setTimeout(() => this.hide(this.loader), 300);
+            },
+            
+            showAlert(msg, title="提示") { 
+                document.getElementById('alert-title').innerText = title;
+                this.alertMsg.innerText = msg; 
+                this.show(this.alertModal); 
+            },
+            
+            showConfirm(msg, callback) {
+                this.confirmMsg.innerText = msg;
+                this.confirmCallback = callback;
+                this.show(this.confirmModal);
+            },
+            
+            navigate(view) {
+                // Reset Nav active states
+                document.querySelectorAll('.nav-item').forEach(el => {
+                    el.classList.remove('bg-white/10', 'text-cyan', 'shadow-sm', 'border-transparent');
+                    el.classList.add('text-gray-300');
+                    if(el.id === 'nav-admin') el.classList.replace('text-gray-300', 'text-gold');
+                });
+
+                this.hide(this.dash); 
+                this.hide(this.workspace);
+                this.hide(this.adminView);
+                this.hide(this.manualView);
+                this.hide(this.topbarActions);
+                this.topbarIndicator.classList.remove('bg-gold', 'bg-cyan', 'bg-blue', 'bg-purple-500');
+
+                if(view === 'dashboard') {
+                    this.show(this.dash);
+                    this.topbarTitle.innerText = "專案儀表板";
+                    this.topbarIndicator.classList.add('bg-blue');
+                    document.getElementById('nav-dashboard').classList.add('bg-white/10', 'text-cyan');
+                    document.getElementById('nav-dashboard').classList.remove('text-gray-300');
+                    loadProjects();
+                } else if(view === 'workspace') {
+                    this.show(this.workspace);
+                    this.show(this.topbarActions);
+                    this.topbarTitle.innerText = currentProject && currentProject.name ? currentProject.name : "編輯新 Skill";
+                    this.topbarIndicator.classList.add('bg-gold');
+                    document.getElementById('nav-new-skill').classList.add('bg-white/10', 'text-cyan');
+                    document.getElementById('nav-new-skill').classList.remove('text-gray-300');
+                    
+                    if (currentProject && !currentProject.isNew) {
+                        UI.hide(document.getElementById('unsaved-overlay'));
+                        loadProjectFiles();
+                    } else {
+                        UI.show(document.getElementById('unsaved-overlay'));
+                    }
+                    updateMarkdown();
+                } else if(view === 'admin') {
+                    this.show(this.adminView);
+                    this.topbarTitle.innerText = "系統管理後台";
+                    this.topbarIndicator.classList.add('bg-purple-500');
+                    document.getElementById('nav-admin').classList.add('bg-white/10', 'shadow-sm');
+                    loadAdminData();
+                } else if(view === 'manual') {
+                    this.show(this.manualView);
+                    this.topbarTitle.innerText = "使用說明書";
+                    this.topbarIndicator.classList.add('bg-cyan');
+                    document.getElementById('nav-manual').classList.add('bg-white/10', 'text-cyan');
+                    document.getElementById('nav-manual').classList.remove('text-gray-300');
+                }
+            },
+            
+            switchAuthForm(target) {
+                ['auth-form-login', 'auth-form-register', 'auth-form-forgot'].forEach(id => {
+                    this.hide(document.getElementById(id));
+                });
+                this.show(document.getElementById(`auth-form-${target}`));
+            }
+        };
+
+        // Modal bindings
+        document.getElementById('btn-close-alert').addEventListener('click', () => UI.hide(UI.alertModal));
+        document.getElementById('btn-cancel-confirm').addEventListener('click', () => {
+            UI.hide(UI.confirmModal);
+            UI.confirmCallback = null;
+        });
+        document.getElementById('btn-ok-confirm').addEventListener('click', () => {
+            UI.hide(UI.confirmModal);
+            if (typeof UI.confirmCallback === 'function') {
+                UI.confirmCallback();
+            }
+            UI.confirmCallback = null;
+        });
+        
+        // About & Review Modals
+        document.getElementById('btn-about-login').addEventListener('click', () => UI.show(UI.aboutModal));
+        document.getElementById('nav-about-sidebar').addEventListener('click', (e) => { e.preventDefault(); UI.show(UI.aboutModal); });
+        document.getElementById('btn-close-about').addEventListener('click', () => UI.hide(UI.aboutModal));
+        
+        document.getElementById('btn-review-login').addEventListener('click', () => UI.show(UI.reviewModal));
+        document.getElementById('btn-close-review').addEventListener('click', () => UI.hide(UI.reviewModal));
+
+        // API Key Modal bindings
+        document.getElementById('btn-open-api-sidebar').addEventListener('click', () => {
+            document.getElementById('gemini-key-input').value = localStorage.getItem('gemini_api_key') || '';
+            UI.show(UI.apiModal);
+        });
+        document.getElementById('btn-close-api-modal').addEventListener('click', () => UI.hide(UI.apiModal));
+        document.getElementById('btn-save-api-key').addEventListener('click', () => {
+            const val = document.getElementById('gemini-key-input').value.trim();
+            if(val) {
+                localStorage.setItem('gemini_api_key', val);
+                UI.hide(UI.apiModal);
+                UI.showAlert("API 金鑰已成功儲存於本地端。");
+            } else {
+                UI.showAlert("金鑰不能為空", "錯誤");
+            }
+        });
+
+        // Password visibility toggles
+        document.querySelectorAll('.toggle-password').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const targetId = e.currentTarget.getAttribute('data-target');
+                const input = document.getElementById(targetId);
+                const icon = e.currentTarget.querySelector('i');
+                if(input.type === 'password') {
+                    input.type = 'text';
+                    icon.classList.remove('fa-eye');
+                    icon.classList.add('fa-eye-slash');
+                    icon.classList.add('text-navy');
+                } else {
+                    input.type = 'password';
+                    icon.classList.remove('fa-eye-slash');
+                    icon.classList.remove('text-navy');
+                    icon.classList.add('fa-eye');
+                }
+            });
+        });
+
+        // Auth Form Switchers
+        document.getElementById('link-register').addEventListener('click', (e) => { e.preventDefault(); UI.switchAuthForm('register'); });
+        document.getElementById('link-forgot').addEventListener('click', (e) => { e.preventDefault(); UI.switchAuthForm('forgot'); });
+        document.getElementById('link-back-login').addEventListener('click', (e) => { e.preventDefault(); UI.switchAuthForm('login'); });
+        document.getElementById('link-back-login2').addEventListener('click', (e) => { e.preventDefault(); UI.switchAuthForm('login'); });
+
+        // Sync user profile to Firestore `userProfiles` collection
+        async function syncUserProfile(user, additionalData = null) {
+            const profileRef = doc(db, "artifacts", appId, "userProfiles", user.uid);
+            const docSnap = await getDoc(profileRef);
+            
+            let role = 'user';
+            // Auto assign superadmin based on Email
+            if(user.email === SUPER_ADMIN_EMAIL) role = 'superadmin';
+            
+            if (!docSnap.exists()) {
+                const data = {
+                    uid: user.uid,
+                    email: user.email,
+                    realName: (additionalData && additionalData.realName) ? additionalData.realName : '未命名',
+                    identity: (additionalData && additionalData.identity) ? additionalData.identity : '一般訪客',
+                    role: role,
+                    loginCount: 1,
+                    createdAt: serverTimestamp(),
+                    lastLoginAt: serverTimestamp()
+                };
+                await setDoc(profileRef, data);
+                return data;
+            } else {
+                const currentData = docSnap.data();
+                // Ensure superadmin cannot be downgraded even if doc exists
+                if (user.email === SUPER_ADMIN_EMAIL) currentData.role = 'superadmin';
+                await setDoc(profileRef, {
+                    loginCount: (currentData.loginCount || 1) + 1,
+                    lastLoginAt: serverTimestamp(),
+                    role: currentData.role 
+                }, { merge: true });
+                return docSnap.data();
+            }
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            if (locks.isRegistering) return; // Prevent race condition when registering
+
+            if (user) {
+                // Email Verification Check (Double Opt-in)
+                if (!user.emailVerified) {
+                    UI.showAlert("您的信箱尚未驗證！\n請至信箱點選驗證連結後再次登入。\n\n(若未收到，請檢查垃圾郵件匣)", "拒絕登入");
+                    await signOut(auth);
+                    return;
+                }
+
+                UI.showLoader("正在載入您的專屬空間...");
+                try {
+                    currentUser = user;
+                    currentUserProfile = await syncUserProfile(user);
+                    
+                    UI.hide(UI.login);
+                    UI.show(UI.app);
+                    
+                    // UI Update
+                    const realName = currentUserProfile.realName || "使用者";
+                    document.getElementById('user-name').innerText = realName;
+                    document.getElementById('user-avatar-text').innerText = realName.charAt(0).toUpperCase();
+                    
+                    // RBAC UI updates
+                    const badge = document.getElementById('user-role-badge');
+                    if (currentUserProfile.role === 'superadmin' || currentUserProfile.role === 'admin') {
+                        badge.innerText = currentUserProfile.role.toUpperCase();
+                        badge.classList.replace('bg-white/20', 'bg-gold/90');
+                        UI.show(document.getElementById('nav-admin'));
+                    } else {
+                        badge.innerText = 'USER';
+                        badge.classList.replace('bg-gold/90', 'bg-white/20');
+                        UI.hide(document.getElementById('nav-admin'));
+                    }
+                    
+                    UI.navigate('dashboard');
+                } catch(e) {
+                    console.error(e);
+                    UI.showAlert("讀取使用者設定檔失敗，請確認網路連線。\n" + e.message, "系統錯誤");
+                } finally {
+                    UI.hideLoader();
+                }
+            } else {
+                // Reset State on Logout
+                currentUser = null;
+                currentUserProfile = null;
+                currentProject = null;
+                Object.values(fields).forEach(f => f.value = ''); // clear form
+                // Corrected logout reset bug (tab-content-md instead of non-existent markdown-preview)
+                document.getElementById('tab-content-md').innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-gray-300 opacity-50">
+                        <i class="fas fa-file-code text-6xl mb-4"></i>
+                        <p class="text-lg">左側輸入內容將在此處即時生成格式化文件</p>
+                    </div>`; 
+                UI.show(UI.login);
+                UI.hide(UI.app);
+            }
+        });
+
+        // Email/Password Registration (Race Condition Fixed)
+        document.getElementById('form-register').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (locks.isRegistering) return;
+            
+            const email = document.getElementById('reg-email').value.trim();
+            const pwd = document.getElementById('reg-password').value;
+            const name = document.getElementById('reg-name').value.trim();
+            const identity = document.getElementById('reg-identity').value;
+            
+            UI.showLoader("正在為您建立帳號...");
+            locks.isRegistering = true; // Lock Auth State Change
+            try {
+                const userCred = await createUserWithEmailAndPassword(auth, email, pwd);
+                await syncUserProfile(userCred.user, { realName: name, identity: identity });
+                await sendEmailVerification(userCred.user);
+                await signOut(auth); // Force logout for verification
+                
+                locks.isRegistering = false; // Unlock
+                UI.hideLoader();
+                UI.switchAuthForm('login');
+                UI.showAlert(`註冊成功！\n\n系統已發送驗證信至:\n${email}\n\n請前往點擊驗證連結後才能登入。\n(提醒：若沒看到請檢查垃圾郵件匣)`, "請驗證信箱");
+                document.getElementById('form-register').reset();
+            } catch (error) {
+                locks.isRegistering = false; // Unlock
+                UI.hideLoader();
+                let msg = error.message;
+                if(error.code === 'auth/email-already-in-use') msg = '此信箱已被註冊。';
+                if(error.code === 'auth/weak-password') msg = '密碼強度過弱，至少需要6個字元。';
+                UI.showAlert("註冊失敗：" + msg, "錯誤");
+            }
+        });
+
+        // Email/Password Login
+        document.getElementById('form-login').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value.trim();
+            const pwd = document.getElementById('login-password').value;
+            UI.showLoader("登入驗證中...");
+            try {
+                await signInWithEmailAndPassword(auth, email, pwd);
+            } catch (error) {
+                UI.hideLoader();
+                let msg = error.message;
+                if(error.code === 'auth/invalid-credential') msg = '信箱或密碼錯誤。';
+                UI.showAlert("登入失敗：" + msg, "錯誤");
+            }
+        });
+
+        // Forgot Password
+        document.getElementById('form-forgot').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('forgot-email').value.trim();
+            UI.showLoader("發送重設信件中...");
+            try {
+                await sendPasswordResetEmail(auth, email);
+                UI.hideLoader();
+                UI.switchAuthForm('login');
+                UI.showAlert(`密碼重設信已發送至:\n${email}\n\n請前往點擊連結重設密碼。\n(提醒：若沒看到請檢查垃圾郵件匣)`, "發送成功");
+                document.getElementById('form-forgot').reset();
+            } catch (error) {
+                UI.hideLoader();
+                UI.showAlert("發送失敗：" + error.message, "錯誤");
+            }
+        });
+
+        document.getElementById('btn-logout').addEventListener('click', () => {
+            if(isUnsaved) {
+                UI.showConfirm("您有未儲存的變更，確定要登出嗎？未儲存的資料將會遺失。", async () => {
+                    await signOut(auth);
+                });
+            } else {
+                signOut(auth);
+            }
+        });
+
+        // Navigation binds
+        document.getElementById('nav-admin').addEventListener('click', (e) => { e.preventDefault(); UI.navigate('admin'); });
+        document.getElementById('nav-manual').addEventListener('click', (e) => { e.preventDefault(); UI.navigate('manual'); });
+        document.getElementById('nav-dashboard').addEventListener('click', (e) => { e.preventDefault(); UI.navigate('dashboard'); });
+        document.getElementById('nav-new-skill').addEventListener('click', (e) => { 
+            e.preventDefault(); 
+            if(isUnsaved) {
+                UI.showConfirm("建立新專案將放棄目前未儲存的變更，是否繼續？", () => {
+                    window.createNewProject();
+                });
+            } else {
+                window.createNewProject(); 
+            }
+        });
+
+        // Dashboard & Project Management
+        async function loadProjects() {
+            if (!currentUser) return;
+            const listEl = document.getElementById('project-list');
+            listEl.innerHTML = '<div class="col-span-full flex flex-col items-center justify-center py-20 text-gray-400"><i class="fas fa-spinner fa-spin text-3xl mb-4 text-cyan"></i><p class="font-medium">載入專案中...</p></div>';
+            try {
+                const q = query(collection(db, "artifacts", appId, "users", currentUser.uid, "projects"));
+                const snapshot = await getDocs(q);
+                if (snapshot.empty) {
+                    listEl.innerHTML = `
+                        <div class="col-span-full flex flex-col items-center justify-center py-20 bg-white rounded-2xl border-2 border-dashed border-gray-200">
+                            <i class="fas fa-folder-open text-5xl text-gray-300 mb-4"></i>
+                            <h4 class="text-lg font-bold text-navy mb-1">您還沒有建立任何 Skill</h4>
+                            <p class="text-gray-500 mb-6 text-sm">點擊下方按鈕，開始將您的提示詞升級為標準作業協議</p>
+                            <button onclick="createNewProject()" class="px-6 py-2.5 bg-navy text-white rounded-lg shadow hover:bg-[#1a4273] transition font-medium"><i class="fas fa-plus mr-2"></i>建立第一個 Skill</button>
+                        </div>`;
+                    return;
+                }
+                listEl.innerHTML = '';
+                
+                // Sort client-side to avoid index requirement errors
+                const docs = snapshot.docs.sort((a, b) => {
+                    const timeA = a.data().updatedAt?.toMillis() || 0;
+                    const timeB = b.data().updatedAt?.toMillis() || 0;
+                    return timeB - timeA;
+                });
+                
+                docs.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const card = document.createElement('div');
+                    card.className = "bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition duration-300 cursor-pointer flex flex-col h-56 relative group hover:-translate-y-1";
+                    card.onclick = () => openProject(docSnap.id, data);
+                    card.innerHTML = `
+                        <button onclick="deleteProject('${docSnap.id}', event)" class="absolute top-4 right-4 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition z-10 p-2 bg-white rounded-full shadow-sm" title="刪除專案">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                        <div class="flex justify-between items-start mb-4 pr-8">
+                            <h4 class="font-bold text-lg text-navy line-clamp-1">${data.name || '未命名 Skill'}</h4>
+                        </div>
+                        <p class="text-sm text-gray-500 flex-1 line-clamp-3 leading-relaxed">${data.desc || '尚無描述，請點擊編輯補充任務目的。'}</p>
+                        <div class="mt-4 pt-4 border-t border-gray-50 flex justify-between items-center text-xs text-gray-400">
+                            <span class="flex items-center gap-1.5"><i class="far fa-clock"></i>${data.updatedAt?.toDate().toLocaleDateString() || '剛才'}</span>
+                            <span class="flex items-center gap-1 group-hover:text-cyan transition font-medium">編輯 <i class="fas fa-arrow-right text-[10px]"></i></span>
+                        </div>
+                    `;
+                    listEl.appendChild(card);
+                });
+            } catch (err) {
+                console.error("載入專案錯誤", err);
+                listEl.innerHTML = '<div class="col-span-full text-red-500 p-6 bg-red-50 rounded-xl border border-red-100"><i class="fas fa-exclamation-circle mr-2"></i>載入失敗，請確認網路連線。</div>';
+            }
+        }
+
+        window.deleteProject = (projectId, event) => {
+            event.stopPropagation();
+            UI.showConfirm("確定要刪除這個 Skill 嗎？\n注意：這不會刪除您已上傳到資源管理中的雲端檔案。", async () => {
+                UI.showLoader("刪除中...");
+                try {
+                    await deleteDoc(doc(db, "artifacts", appId, "users", currentUser.uid, "projects", projectId));
+                    await loadProjects();
+                    if (currentProject && currentProject.id === projectId) {
+                        currentProject = null;
+                        Object.values(fields).forEach(f => f.value = ''); // clear form
+                        isUnsaved = false;
+                        updateSaveStatus();
+                        // if currently in workspace, kick out to dashboard
+                        if(!UI.workspace.classList.contains('hide')){
+                            UI.navigate('dashboard');
+                        }
+                    }
+                } catch (err) {
+                    console.error("刪除失敗", err);
+                    UI.showAlert("刪除失敗: " + err.message, "錯誤");
+                } finally {
+                    UI.hideLoader();
+                }
+            });
+        };
+
+        window.createNewProject = () => {
+            currentProject = { id: Date.now().toString(), name: '', desc: '', content: {}, isNew: true };
+            Object.values(fields).forEach(f => f.value = '');
+            isUnsaved = true;
+            updateSaveStatus();
+            UI.navigate('workspace');
+            // Select first step automatically
+            document.querySelector('.step-nav[data-step="1"]').click();
+            // Switch to MD tab automatically
+            document.getElementById('tab-btn-md').click();
+        };
+
+        function openProject(id, data) {
+            currentProject = { id, ...data, isNew: false };
+            fields.name.value = data.name || '';
+            fields.desc.value = data.desc || '';
+            const c = data.content || {};
+            fields.triggerPos.value = c.triggerPos || '';
+            fields.triggerNeg.value = c.triggerNeg || '';
+            fields.inputReq.value = c.inputReq || '';
+            fields.inputQ.value = c.inputQ || '';
+            fields.workflow.value = c.workflow || '';
+            fields.decision.value = c.decision || '';
+            fields.output.value = c.output || '';
+            fields.validation.value = c.validation || '';
+            fields.stop.value = c.stop || '';
+            
+            isUnsaved = false;
+            updateSaveStatus();
+            UI.navigate('workspace');
+            document.querySelector('.step-nav[data-step="1"]').click();
+            document.getElementById('tab-btn-md').click();
+        }
+
+        // Form & Markdown Sync with Debounce
+        let mdUpdateTimeout = null;
+        window.debouncedUpdateMarkdown = () => {
+            isUnsaved = true;
+            updateSaveStatus();
+            
+            if (mdUpdateTimeout) clearTimeout(mdUpdateTimeout);
+            mdUpdateTimeout = setTimeout(() => {
+                updateMarkdown();
+            }, 300); // 300ms debounce
+        };
+
+        function updateSaveStatus() {
+            const statusEl = document.getElementById('save-status');
+            if (isUnsaved) {
+                statusEl.innerHTML = '<i class="fas fa-circle text-[8px] text-orange-400"></i><span class="text-orange-500">未儲存</span>';
+                statusEl.className = "flex items-center gap-1.5 text-xs font-medium bg-orange-50 px-2 py-1 rounded-full border border-orange-100 transition-colors duration-300";
+            } else {
+                statusEl.innerHTML = '<i class="fas fa-check-circle text-green-500"></i><span class="text-green-600">已儲存</span>';
+                statusEl.className = "flex items-center gap-1.5 text-xs font-medium bg-green-50 px-2 py-1 rounded-full border border-green-100 transition-colors duration-300";
+            }
+        }
+
+        function generateMarkdownString() {
+            const nameStr = fields.name.value.trim() || '未命名 Skill';
+            const descStr = fields.desc.value.trim() || '請輸入描述以說明此 Skill 的任務目的。';
+            return `
+# ${nameStr}
+> ${descStr}
+
+## 1. 叫 (Trigger) - 觸發條件
+### 應觸發
+${fields.triggerPos.value || '*尚未定義*'}
+### 排除觸發
+${fields.triggerNeg.value || '*尚未定義*'}
+
+## 2. 收 (Input) - 資訊收集
+### 必要欄位
+${fields.inputReq.value || '*尚未定義*'}
+### 缺漏提問策略
+${fields.inputQ.value || '*尚未定義*'}
+
+## 3. 做 (Workflow) - 執行步驟
+${fields.workflow.value || '*尚未定義*'}
+
+## 4. 判 (Decision) - 決策與例外
+${fields.decision.value || '*尚未定義*'}
+
+## 5. 交 (Output) - 產出格式
+${fields.output.value || '*尚未定義*'}
+
+## 6. 驗 (Validation) - 自我檢查
+${fields.validation.value || '*尚未定義*'}
+
+## 7. 停 (Stop) - 停止與安全邊界
+${fields.stop.value || '*尚未定義*'}
+`.trim();
+        }
+
+        function updateMarkdown() {
+            const mdString = generateMarkdownString();
+            document.getElementById('tab-content-md').innerHTML = marked.parse(mdString);
+            if(currentProject) currentProject.name = fields.name.value;
+            UI.topbarTitle.innerText = currentProject?.name || "編輯新 Skill";
+        }
+
+        // Save Project to Firestore
+        document.getElementById('btn-save-project').addEventListener('click', async () => {
+            if (!currentUser || !currentProject) return;
+            if (locks.isSaving) return;
+            
+            UI.showLoader("儲存中...");
+            locks.isSaving = true;
+            try {
+                const projectRef = doc(db, "artifacts", appId, "users", currentUser.uid, "projects", currentProject.id);
+                const projectData = {
+                    name: fields.name.value,
+                    desc: fields.desc.value,
+                    content: {
+                        triggerPos: fields.triggerPos.value,
+                        triggerNeg: fields.triggerNeg.value,
+                        inputReq: fields.inputReq.value,
+                        inputQ: fields.inputQ.value,
+                        workflow: fields.workflow.value,
+                        decision: fields.decision.value,
+                        output: fields.output.value,
+                        validation: fields.validation.value,
+                        stop: fields.stop.value
+                    },
+                    updatedAt: serverTimestamp()
+                };
+                if (currentProject.isNew) {
+                    projectData.createdAt = serverTimestamp();
+                }
+                
+                await setDoc(projectRef, projectData, { merge: true });
+                isUnsaved = false;
+                currentProject.isNew = false;
+                updateSaveStatus();
+                
+                // Hide the unsaved overlay in files tab
+                UI.hide(document.getElementById('unsaved-overlay'));
+                
+            } catch (err) {
+                console.error(err);
+                UI.showAlert("儲存失敗，請檢查網路狀態。 (" + err.message + ")", "錯誤");
+            } finally {
+                locks.isSaving = false;
+                UI.hideLoader();
+            }
+        });
+
+        // Tabs UI Interactions (Stepper)
+        const navBtns = document.querySelectorAll('.step-nav');
+        const panels = document.querySelectorAll('.step-panel');
+        navBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const target = e.currentTarget; 
+                const step = target.dataset.step;
+                
+                // Update Nav Visuals
+                navBtns.forEach(b => {
+                    b.classList.remove('active', 'bg-navy', 'text-white', 'border-transparent', 'shadow-md', 'scale-110', 'z-20');
+                    b.classList.add('bg-white', 'text-gray-400', 'border-gray-200');
+                    b.classList.add('hover:text-navy', 'hover:border-gray-300');
+                });
+                target.classList.remove('bg-white', 'text-gray-400', 'border-gray-200', 'hover:text-navy', 'hover:border-gray-300');
+                target.classList.add('active', 'bg-navy', 'text-white', 'border-transparent', 'shadow-md', 'scale-110', 'z-20');
+                
+                if(step === "7") {
+                     target.classList.replace('bg-navy', 'bg-red-600');
+                }
+                
+                // Update Panels
+                panels.forEach(p => UI.hide(p));
+                const activePanel = document.getElementById(`panel-${step}`);
+                UI.show(activePanel);
+                
+                document.getElementById('form-panels').scrollTop = 0;
+            });
+        });
+
+        // V2.0 Right Panel Tabs (MD vs Files)
+        const btnTabMd = document.getElementById('tab-btn-md');
+        const btnTabFiles = document.getElementById('tab-btn-files');
+        const contentMd = document.getElementById('tab-content-md');
+        const contentFiles = document.getElementById('tab-content-files');
+
+        btnTabMd.addEventListener('click', () => {
+            btnTabMd.className = "px-4 py-1.5 text-sm font-bold rounded-md bg-white text-navy shadow-sm transition";
+            btnTabFiles.className = "px-4 py-1.5 text-sm font-bold rounded-md text-gray-500 hover:text-navy hover:bg-white/50 transition";
+            UI.show(contentMd);
+            UI.hide(contentFiles);
+        });
+
+        btnTabFiles.addEventListener('click', () => {
+            btnTabFiles.className = "px-4 py-1.5 text-sm font-bold rounded-md bg-white text-navy shadow-sm transition";
+            btnTabMd.className = "px-4 py-1.5 text-sm font-bold rounded-md text-gray-500 hover:text-navy hover:bg-white/50 transition";
+            UI.hide(contentMd);
+            UI.show(contentFiles);
+            // Auto load files if project exists
+            if(currentProject && !currentProject.isNew) {
+                loadProjectFiles();
+            }
+        });
+
+        const fileInput = document.getElementById('file-upload-input');
+        const uploadOverlay = document.getElementById('upload-progress-overlay');
+        const uploadText = document.getElementById('upload-progress-text');
+        
+        fileInput.addEventListener('change', async (e) => {
+            const files = e.target.files;
+            if(!files || files.length === 0) return;
+            if(!currentUser || !currentProject || currentProject.isNew) return;
+            
+            const category = document.getElementById('file-category-select').value;
+            let successCount = 0;
+            
+            UI.show(uploadOverlay);
+            locks.isUploading = true;
+            
+            try {
+                for(let i=0; i<files.length; i++) {
+                    const file = files[i];
+                    if(file.size > 10 * 1024 * 1024) {
+                        UI.showAlert(`檔案 ${file.name} 超過 10MB，建議上傳較小的檔案以利 AI 處理。`, "檔案過大");
+                        continue;
+                    }
+                    
+                    uploadText.innerText = `上傳中... (${i+1}/${files.length})`;
+                    
+                    const filePath = `artifacts/${appId}/users/${currentUser.uid}/projects/${currentProject.id}/${category}/${file.name}`;
+                    const storageRef = ref(storage, filePath);
+                    
+                    await uploadBytesResumable(storageRef, file);
+                    successCount++;
+                }
+            } catch (err) {
+                console.error("Upload error:", err);
+                UI.showAlert("上傳失敗：" + err.message, "錯誤");
+            } finally {
+                fileInput.value = ""; // Reset input
+                UI.hide(uploadOverlay);
+                locks.isUploading = false;
+                if(successCount > 0) {
+                    loadProjectFiles(); // Refresh list
+                }
+            }
+        });
+
+        async function loadProjectFiles() {
+            if(!currentUser || !currentProject || currentProject.isNew) return;
+            
+            const listContainer = document.getElementById('file-list-container');
+            listContainer.innerHTML = '<div class="flex items-center justify-center h-full text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i>讀取中...</div>';
+            
+            try {
+                const categories = ['references', 'assets', 'scripts'];
+                let allFiles = [];
+                currentProject.downloadableFiles = []; 
+                
+                for(const cat of categories) {
+                    const folderRef = ref(storage, `artifacts/${appId}/users/${currentUser.uid}/projects/${currentProject.id}/${cat}`);
+                    try {
+                        const res = await listAll(folderRef);
+                        for(const itemRef of res.items) {
+                            const url = await getDownloadURL(itemRef);
+                            allFiles.push({
+                                name: itemRef.name,
+                                category: cat,
+                                fullPath: itemRef.fullPath,
+                                url: url
+                            });
+                        }
+                    } catch(listErr) {
+                        if (listErr.code === 'storage/unauthorized') {
+                            listContainer.innerHTML = `<div class="text-red-500 p-4 text-sm text-center bg-red-50 rounded border border-red-100">
+                                <i class="fas fa-exclamation-triangle block text-2xl mb-2"></i> 
+                                讀取失敗：Storage 權限不足。<br>請確認 Firebase Rules 中含有 {allPaths=**} 規則。</div>`;
+                            return; // Stop execution on auth error
+                        }
+                        console.debug(`Category ${cat} logic check passed.`, listErr);
+                    }
+                }
+                
+                currentProject.downloadableFiles = allFiles;
+                
+                if(allFiles.length === 0) {
+                    listContainer.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full text-gray-400 text-sm py-10">
+                            <i class="fas fa-folder-open text-4xl mb-3 text-gray-200"></i>
+                            尚未上傳任何檔案
+                        </div>`;
+                    return;
+                }
+                
+                // Render List grouped by category
+                listContainer.innerHTML = '';
+                const catNames = { 'references': '知識庫', 'assets': '模板素材', 'scripts': '自動化' };
+                
+                categories.forEach(cat => {
+                    const catFiles = allFiles.filter(f => f.category === cat);
+                    if(catFiles.length > 0) {
+                        const groupDiv = document.createElement('div');
+                        groupDiv.className = "mb-4";
+                        groupDiv.innerHTML = `<h5 class="text-xs font-bold text-gray-500 uppercase mb-2 ml-1 tracking-wider">${cat}/ (${catNames[cat]})</h5>`;
+                        
+                        catFiles.forEach(f => {
+                            const item = document.createElement('div');
+                            item.className = "flex items-center justify-between p-2.5 bg-white border border-gray-100 rounded-lg shadow-sm hover:shadow hover:border-gray-300 transition mb-2 group";
+                            
+                            let icon = "fa-file";
+                            if(f.name.endsWith('.pdf')) icon = "fa-file-pdf text-red-500";
+                            else if(f.name.endsWith('.docx') || f.name.endsWith('.doc')) icon = "fa-file-word text-blue";
+                            else if(f.name.endsWith('.png') || f.name.endsWith('.jpg')) icon = "fa-file-image text-green-500";
+                            else if(f.name.endsWith('.py') || f.name.endsWith('.js')) icon = "fa-file-code text-yellow-500";
+                            
+                            item.innerHTML = `
+                                <div class="flex items-center gap-3 overflow-hidden">
+                                    <i class="fas ${icon} text-lg w-5 text-center shrink-0"></i>
+                                    <a href="${f.url}" target="_blank" class="text-sm font-medium text-gray-700 truncate hover:text-blue hover:underline" title="${f.name}">${f.name}</a>
+                                </div>
+                                <button onclick="deleteFile('${f.fullPath}')" class="text-gray-300 hover:text-red-500 p-1.5 rounded transition opacity-0 group-hover:opacity-100" title="刪除檔案">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            `;
+                            groupDiv.appendChild(item);
+                        });
+                        listContainer.appendChild(groupDiv);
+                    }
+                });
+                
+            } catch (err) {
+                console.error("載入檔案列表錯誤", err);
+                listContainer.innerHTML = `<div class="text-red-500 p-3 text-sm text-center"><i class="fas fa-exclamation-triangle"></i> 無法讀取檔案：${err.message}</div>`;
+            }
+        }
+
+        window.deleteFile = (fullPath) => {
+            UI.showConfirm("確定要刪除這個檔案嗎？刪除後無法復原。", async () => {
+                UI.showLoader("刪除檔案中...");
+                try {
+                    const fileRef = ref(storage, fullPath);
+                    await deleteObject(fileRef);
+                    await loadProjectFiles(); 
+                } catch(e) {
+                    UI.showAlert("刪除失敗：" + e.message, "錯誤");
+                } finally {
+                    UI.hideLoader();
+                }
+            });
+        };
+
+        // AI 幫我寫 (AI Draft using gemini-3.7-flash)
+        document.getElementById('btn-ai-draft').addEventListener('click', async () => {
+            if(locks.isGeneratingAI) return;
+            
+            const apiKey = localStorage.getItem('gemini_api_key');
+            if(!apiKey) {
+                UI.showAlert("請先在左下角設定您的 Gemini API 金鑰。");
+                UI.show(UI.apiModal);
+                return;
+            }
+            
+            const desc = fields.desc.value.trim();
+            if(!desc) {
+                UI.showAlert("請先在上方輸入簡單的 Skill 描述，AI 才知道要幫您規劃什麼！");
+                fields.desc.focus();
+                return;
+            }
+
+            UI.showLoader("AI 正在思考架構中... (呼叫 gemini-3.7-flash)");
+            locks.isGeneratingAI = true;
+            
+            const promptText = `你是一位專業的 AI 顧問，請根據以下任務描述，使用「TONY Skill 七字訣」產出工作流程草稿。
+任務描述：${desc}
+請回傳嚴格的 JSON 格式，不要包含任何 markdown code block (如 \`\`\`json)，直接回傳 JSON 物件。欄位定義如下：
+{"triggerPos":"應觸發條件","triggerNeg":"排除條件","inputReq":"必要輸入資訊","inputQ":"缺漏時提問","workflow":"工作步驟(以數字條列，動詞開頭)","decision":"判斷邏輯(If/Then)","output":"產出格式要求","validation":"驗收檢查點","stop":"安全紅線與停止條件"}`;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: promptText }] }],
+                        generationConfig: { responseMimeType: "application/json" }
+                    })
+                });
+
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error?.message || "API 呼叫失敗");
+                }
+
+                const data = await response.json();
+                const result = JSON.parse(data.candidates[0].content.parts[0].text);
+
+                fields.triggerPos.value = result.triggerPos || '';
+                fields.triggerNeg.value = result.triggerNeg || '';
+                fields.inputReq.value = result.inputReq || '';
+                fields.inputQ.value = result.inputQ || '';
+                fields.workflow.value = result.workflow || '';
+                fields.decision.value = result.decision || '';
+                fields.output.value = result.output || '';
+                fields.validation.value = result.validation || '';
+                fields.stop.value = result.stop || '';
+
+                if(!fields.name.value) fields.name.value = "AI_Draft_" + new Date().getTime().toString().slice(-4);
+                window.debouncedUpdateMarkdown();
+                UI.showAlert("AI 草稿已生成！請切換左側步驟逐一審閱與修改。", "生成成功");
+            } catch (err) {
+                console.error(err);
+                UI.showAlert("AI 生成失敗：" + err.message + "\n\n請確認您的 API 金鑰是否正確或具有足夠額度。", "錯誤");
+            } finally {
+                locks.isGeneratingAI = false;
+                UI.hideLoader();
+            }
+        });
+
+        // V2.0 ZIP Export with Cloud Files Included
+        document.getElementById('btn-export-zip').addEventListener('click', async () => {
+            let rawName = fields.name.value.trim() || '未命名-skill';
+            const skillName = rawName.replace(/[\\\/\:\*\?\"\<\>\|\s]/g, '_');
+            
+            const zip = new JSZip();
+            const folder = zip.folder(skillName);
+            
+            const frontmatter = `---\nname: ${skillName}\ndescription: ${fields.desc.value.trim().replace(/\n/g, ' ')}\nversion: 2.0.0\n---\n\n`;
+            const mdContent = frontmatter + generateMarkdownString();
+            folder.file("SKILL.md", mdContent);
+            
+            const refFolder = folder.folder("references");
+            const scriptFolder = folder.folder("scripts");
+            const assetFolder = folder.folder("assets");
+            folder.folder("agents").file("openai.yaml", "name: " + skillName + "\n# Define UI badges and startup policies here");
+
+            UI.showLoader("封裝檔案中，這可能需要一點時間...");
+            
+            let downloadErrors = [];
+            
+            if (currentProject && currentProject.downloadableFiles && currentProject.downloadableFiles.length > 0) {
+                for (const f of currentProject.downloadableFiles) {
+                    try {
+                        UI.loaderText.innerText = `下載檔案中: ${f.name}`;
+                        const response = await fetch(f.url);
+                        if(!response.ok) throw new Error("Network response was not ok");
+                        const blob = await response.blob();
+                        
+                        if(f.category === 'references') refFolder.file(f.name, blob);
+                        else if(f.category === 'scripts') scriptFolder.file(f.name, blob);
+                        else if(f.category === 'assets') assetFolder.file(f.name, blob);
+                        
+                    } catch(e) {
+                        console.error(`Error downloading ${f.name}:`, e);
+                        downloadErrors.push(f.name);
+                    }
+                }
+            }
+            
+            if(Object.keys(refFolder.files).length === 0) refFolder.file(".keep", "This folder contains reference materials.");
+            if(Object.keys(scriptFolder.files).length === 0) scriptFolder.file(".keep", "This folder contains executable scripts.");
+            if(Object.keys(assetFolder.files).length === 0) assetFolder.file(".keep", "This folder contains assets like logos or templates.");
+
+            try {
+                UI.loaderText.innerText = "產生壓縮檔...";
+                const content = await zip.generateAsync({type:"blob"});
+                const url = window.URL.createObjectURL(content);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `${skillName}.zip`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                if(downloadErrors.length > 0) {
+                    UI.showAlert(`打包完成，但以下檔案因網路或權限限制未能打包進 ZIP：\n${downloadErrors.join(', ')}\n\n(提示：請確認已透過 Cloud Shell 正確設定 CORS)`, "部分檔案下載失敗");
+                }
+                
+            } catch (err) {
+                console.error(err);
+                UI.showAlert("匯出 ZIP 失敗: " + err.message, "錯誤");
+            } finally {
+                UI.hideLoader();
+            }
+        });
+
+        // Admin Data Loading
+        async function loadAdminData() {
+            if(!currentUserProfile || (currentUserProfile.role !== 'admin' && currentUserProfile.role !== 'superadmin')) {
+                UI.showAlert("權限不足，無法進入管理後台。");
+                UI.navigate('dashboard');
+                return;
+            }
+
+            const tbody = document.getElementById('admin-user-table-body');
+            const countEl = document.getElementById('admin-user-count');
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-12 text-gray-400"><i class="fas fa-spinner fa-spin text-2xl mb-2"></i><br>載入資料中...</td></tr>';
+            countEl.innerText = '計算中...';
+            
+            try {
+                const q = query(collection(db, "artifacts", appId, "userProfiles"), orderBy("createdAt", "desc"));
+                const snapshot = await getDocs(q);
+                
+                if (snapshot.empty) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-12 text-gray-500">尚無註冊會員資料</td></tr>';
+                    countEl.innerText = '共 0 名會員';
+                    return;
+                }
+                
+                tbody.innerHTML = '';
+                window.adminUserList = [];
+                countEl.innerText = `共 ${snapshot.size} 名會員`;
+                
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    window.adminUserList.push(data);
+                    
+                    const dateStr = data.createdAt ? data.createdAt.toDate().toLocaleString() : '未知';
+                    const isSuper = data.email === SUPER_ADMIN_EMAIL;
+                    
+                    let roleBadge = `<span class="px-2 py-1 text-xs rounded border border-gray-200 bg-gray-50 text-gray-600 font-medium tracking-wide">USER</span>`;
+                    if(data.role === 'admin') roleBadge = `<span class="px-2 py-1 text-xs rounded border border-blue/30 bg-blue/10 text-blue font-bold tracking-wide">ADMIN</span>`;
+                    if(data.role === 'superadmin') roleBadge = `<span class="px-2 py-1 text-xs rounded border border-gold/30 bg-gold/10 text-gold font-bold tracking-wide">SUPER ADMIN</span>`;
+                    
+                    let actionHtml = '';
+                    if (isSuper) {
+                        actionHtml = `<span class="text-xs text-gray-400 italic bg-gray-100 px-2 py-1 rounded">系統保護</span>`;
+                    } else if (currentUserProfile.role === 'superadmin') {
+                        const toggleTxt = data.role === 'admin' ? '降為 User' : '升為 Admin';
+                        const toggleIcon = data.role === 'admin' ? 'fa-arrow-down' : 'fa-arrow-up';
+                        const toggleColor = data.role === 'admin' ? 'text-orange-500 hover:bg-orange-50' : 'text-blue hover:bg-blue/10';
+                        actionHtml = `
+                            <button onclick="toggleUserRole('${data.uid}', '${data.role}')" class="p-1.5 rounded ${toggleColor} mx-1 transition border border-transparent hover:border-current" title="${toggleTxt}"><i class="fas ${toggleIcon}"></i></button>
+                            <button onclick="deleteUserProfile('${data.uid}')" class="p-1.5 rounded text-red-500 hover:bg-red-50 mx-1 transition border border-transparent hover:border-red-200" title="刪除檔案"><i class="fas fa-trash-alt"></i></button>
+                        `;
+                    } else if (currentUserProfile.role === 'admin' && data.role === 'user') {
+                         actionHtml = `
+                            <button onclick="deleteUserProfile('${data.uid}')" class="p-1.5 rounded text-red-500 hover:bg-red-50 mx-1 transition border border-transparent hover:border-red-200" title="刪除檔案"><i class="fas fa-trash-alt"></i></button>
+                        `;
+                    } else {
+                        actionHtml = `<span class="text-xs text-gray-400">-</span>`;
+                    }
+
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-blue/5 transition bg-white";
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="font-bold text-gray-800">${data.realName || '未命名'}</div>
+                            <div class="text-xs text-gray-500">${data.email}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600"><span class="bg-gray-100 px-2 py-1 rounded-md text-xs">${data.identity || '一般訪客'}</span></td>
+                        <td class="px-6 py-4 whitespace-nowrap">${roleBadge}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-bold text-navy">${data.loginCount || 0}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-xs text-gray-500">${dateStr}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right">${actionHtml}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                
+            } catch(e) {
+                console.error(e);
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-12 text-red-500 bg-red-50"><i class="fas fa-exclamation-triangle mb-2 text-xl"></i><br>無法讀取資料: ${e.message}</td></tr>`;
+            }
+        }
+
+        window.toggleUserRole = async (uid, currentRole) => {
+            const newRole = currentRole === 'admin' ? 'user' : 'admin';
+            UI.showConfirm(`確定要將此會員權限更改為 [${newRole.toUpperCase()}] 嗎？`, async () => {
+                UI.showLoader("變更中...");
+                try {
+                    await setDoc(doc(db, "artifacts", appId, "userProfiles", uid), { role: newRole }, { merge: true });
+                    await loadAdminData();
+                } catch(e) { UI.showAlert("變更失敗: " + e.message, "錯誤"); }
+                finally { UI.hideLoader(); }
+            });
+        };
+
+        window.deleteUserProfile = async (uid) => {
+            UI.showConfirm("【警告】確定要刪除此會員的設定檔嗎？\n刪除後該帳號下次登入將視為全新帳號。", async () => {
+                UI.showLoader("刪除中...");
+                try {
+                    await deleteDoc(doc(db, "artifacts", appId, "userProfiles", uid));
+                    await loadAdminData();
+                } catch(e) { UI.showAlert("刪除失敗: " + e.message, "錯誤"); }
+                finally { UI.hideLoader(); }
+            });
+        };
+
+        // CSV Export with BOM
+        document.getElementById('btn-export-csv').addEventListener('click', () => {
+            if(!window.adminUserList || window.adminUserList.length === 0) {
+                UI.showAlert("目前沒有資料可以匯出");
+                return;
+            }
+            
+            const header = ["姓名", "Email", "身分", "權限", "登入次數", "註冊時間", "最後登入"];
+            const rows = window.adminUserList.map(u => [
+                `"${u.realName || ''}"`,
+                `"${u.email || ''}"`,
+                `"${u.identity || ''}"`,
+                `"${u.role || ''}"`,
+                u.loginCount || 0,
+                `"${u.createdAt ? u.createdAt.toDate().toLocaleString() : ''}"`,
+                `"${u.lastLoginAt ? u.lastLoginAt.toDate().toLocaleString() : ''}"`
+            ]);
+            
+            const csvContent = [header.join(','), ...rows.map(r => r.join(','))].join('\n');
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `TONY_Skill_Builder_Members_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        // AI Business Report Generation (Using gemini-3.7-flash)
+        document.getElementById('btn-generate-report').addEventListener('click', async () => {
+            if (locks.isGeneratingAI) return;
+
+            const apiKey = localStorage.getItem('gemini_api_key');
+            if(!apiKey) {
+                UI.showAlert("請先在左下角設定您的 Gemini API 金鑰。");
+                UI.show(UI.apiModal);
+                return;
+            }
+
+            const startDate = document.getElementById('ai-report-start').value;
+            const endDate = document.getElementById('ai-report-end').value;
+            
+            if(!startDate || !endDate) {
+                UI.showAlert("請選擇分析的起訖日期"); return;
+            }
+            
+            if(!window.adminUserList || window.adminUserList.length === 0) {
+                UI.showAlert("目前無會員資料可供分析"); return;
+            }
+
+            const startT = new Date(startDate).getTime();
+            const endT = new Date(endDate).getTime() + 86400000; 
+
+            const filteredUsers = window.adminUserList.filter(u => {
+                if(!u.createdAt) return false;
+                const t = u.createdAt.toDate().getTime();
+                return t >= startT && t <= endT;
+            });
+            
+            const stats = {
+                totalNewUsers: filteredUsers.length,
+                roleBreakdown: {},
+                identityBreakdown: {},
+                totalLoginsInRange: 0
+            };
+            
+            filteredUsers.forEach(u => {
+                stats.roleBreakdown[u.role] = (stats.roleBreakdown[u.role] || 0) + 1;
+                stats.identityBreakdown[u.identity] = (stats.identityBreakdown[u.identity] || 0) + 1;
+                stats.totalLoginsInRange += (u.loginCount || 1);
+            });
+
+            UI.showLoader("AI 正在深度分析數據中... (呼叫 gemini-3.7-flash)");
+            locks.isGeneratingAI = true;
+            
+            const promptText = `你是一位專業的商業數據分析顧問。以下是「TONY Skill Builder」平台在 ${startDate} 到 ${endDate} 期間的會員註冊與活躍數據。
+請幫我撰寫一份結構專業、具洞察力的「商業分析報告」。
+
+【原始數據】
+- 區間內新增註冊人數：${stats.totalNewUsers} 人
+- 區間內會員總登入次數：${stats.totalLoginsInRange} 次
+- 身分分佈：${JSON.stringify(stats.identityBreakdown)}
+- 權限分佈：${JSON.stringify(stats.roleBreakdown)}
+
+【報告要求】
+請使用 Markdown 格式輸出，結構包含：
+1. 執行摘要 (Executive Summary)
+2. 成長動能分析 (Growth Analysis)
+3. 族群輪廓洞察 (Demographic Insights)
+4. 針對 TONY 老師的下一步商業建議 (Next Step Recommendations)
+直接輸出報告本文，不需其他問候語。`;
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+                });
+
+                if (!response.ok) throw new Error("API 呼叫失敗，請檢查 API Key 或額度限制");
+
+                const data = await response.json();
+                const reportMd = data.candidates[0].content.parts[0].text;
+                
+                document.getElementById('ai-report-content').innerHTML = marked.parse(reportMd);
+                window.currentReportHtml = document.getElementById('ai-report-content').innerHTML;
+                UI.show(document.getElementById('btn-export-word'));
+                
+            } catch (err) {
+                console.error(err);
+                UI.showAlert("AI 報告生成失敗：" + err.message, "錯誤");
+            } finally {
+                locks.isGeneratingAI = false;
+                UI.hideLoader();
+            }
+        });
+
+        // Export HTML to Word
+        document.getElementById('btn-export-word').addEventListener('click', () => {
+            if(!window.currentReportHtml) return;
+            const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>AI Business Report</title><style>body{font-family: 'Microsoft JhengHei', Arial, sans-serif; color: #333;} h1{color: #17365D; border-bottom: 2px solid #00A6A6;} h2{color: #2F75B5;} h3{color: #C6922B;} p{line-height: 1.6;} ul{margin-bottom: 1em;}</style></head><body>";
+            const footer = "</body></html>";
+            const sourceHTML = header + window.currentReportHtml + footer;
+            
+            const blob = new Blob(['\ufeff', sourceHTML], { type: 'application/msword' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `TONY_Business_Report_${new Date().toISOString().split('T')[0]}.doc`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+    </script>
+</body>
+</html>
