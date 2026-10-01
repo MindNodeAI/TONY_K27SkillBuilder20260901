@@ -168,7 +168,7 @@
         </div>
     </div>
 
-    <!-- Product Design Review Modal (New) -->
+    <!-- Product Design Review Modal -->
     <div id="review-modal" class="fixed inset-0 bg-black/70 backdrop-blur-md z-[150] flex items-center justify-center hide p-4">
         <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden relative flex flex-col h-[85vh]">
             <button id="btn-close-review" class="absolute top-4 right-4 text-gray-400 hover:text-navy z-20 bg-gray-100 rounded-full w-8 h-8 flex items-center justify-center transition shadow-sm"><i class="fas fa-times text-lg"></i></button>
@@ -325,7 +325,7 @@
                         <i class="fas fa-search-plus"></i> 產品深度評析
                     </button>
                 </div>
-                <p>© 2026 TONY STUDIO.<br>本教材由 TONY STUDIO 楊文澤顧問設計.<br>All Rights Reserved.</p>
+                <p>© 2020 TonyStudio (TONY 楊文澤顧問).<br>本教材由 TONY STUDIO 楊文澤顧問設計.<br>All Rights Reserved.</p>
             </div>
         </div>
     </div>
@@ -366,7 +366,7 @@
                     <span class="hidden lg:block">系統管理後台</span>
                 </a>
 
-                <div class="mt-auto pt-4 space-y-1">
+                <div class="mt-auto pt-4 space-y-1 border-t border-white/10">
                     <a href="#" id="nav-about-sidebar" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition group text-gray-400 hover:text-white text-sm">
                         <i class="fas fa-user-tie w-6 text-center"></i>
                         <span class="hidden lg:block">關於 TONY 顧問</span>
@@ -375,9 +375,15 @@
                         <i class="fas fa-key w-6 text-center"></i>
                         <span class="hidden lg:block">API 金鑰設定</span>
                     </button>
+                    <!-- Dedicated Logout Button in Sidebar -->
+                    <button id="btn-logout-sidebar" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition text-sm text-left mt-2 border border-transparent hover:border-red-500/30">
+                        <i class="fas fa-sign-out-alt w-6 text-center"></i>
+                        <span class="hidden lg:block font-medium">登出系統</span>
+                    </button>
                 </div>
             </nav>
             
+            <!-- User Profile -->
             <div class="p-4 border-t border-white/10 bg-[#122b4a] flex flex-col gap-2">
                 <div class="flex items-center gap-3 px-2 py-1 rounded">
                     <div class="w-9 h-9 rounded-full bg-gradient-to-br from-cyan to-blue flex items-center justify-center text-white font-bold shrink-0 shadow-inner border border-white/20" id="user-avatar-text">U</div>
@@ -388,11 +394,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- 獨立的登出按鈕，確保手機版與電腦版皆可見 -->
-                <button id="btn-logout" class="w-full flex items-center justify-center lg:justify-start gap-3 px-2 lg:px-3 py-2 mt-1 rounded-lg hover:bg-red-500/10 text-gray-400 hover:text-red-400 transition text-sm">
-                    <i class="fas fa-sign-out-alt w-6 text-center text-lg lg:text-sm"></i>
-                    <span class="hidden lg:block font-medium">登出系統</span>
-                </button>
             </div>
         </aside>
 
@@ -729,7 +730,7 @@
                                         <i class="fas fa-sparkles text-gold absolute -top-2 -right-4 text-xl"></i>
                                     </div>
                                     <p class="text-lg font-medium text-gray-400">設定起訖時間並點擊「產出分析」</p>
-                                    <p class="text-sm text-gray-400 mt-2">Gemini 將根據期間內的註冊與活躍數據，為您生成商業報告</p>
+                                    <p class="text-sm text-gray-400 mt-2">Gemini 3.8-flash 將根據期間內的註冊與活躍數據，為您生成商業報告</p>
                                 </div>
                             </div>
                         </div>
@@ -910,7 +911,7 @@
                     </div>
                     
                     <div class="bg-gray-50 border-t border-gray-200 p-6 text-center text-sm text-gray-400">
-                        TONY Skill Framework © 2026 Tony Studio. 
+                        TONY Skill Framework © 2020 TonyStudio (TONY 楊文澤顧問). 
                     </div>
                 </div>
             </div>
@@ -1232,17 +1233,22 @@
                     UI.hideLoader();
                 }
             } else {
-                // Reset State on Logout
+                // Reset State on Logout securely
                 currentUser = null;
                 currentUserProfile = null;
                 currentProject = null;
-                Object.values(fields).forEach(f => f.value = ''); // clear form
-                // Corrected logout reset bug (tab-content-md instead of non-existent markdown-preview)
-                document.getElementById('tab-content-md').innerHTML = `
+                Object.values(fields).forEach(f => f.value = ''); 
+                
+                // Fix: Reset markdown preview using correct ID reference to prevent TypeError
+                const mdPreview = document.getElementById('tab-content-md');
+                if (mdPreview) {
+                    mdPreview.innerHTML = `
                     <div class="h-full flex flex-col items-center justify-center text-gray-300 opacity-50">
                         <i class="fas fa-file-code text-6xl mb-4"></i>
                         <p class="text-lg">左側輸入內容將在此處即時生成格式化文件</p>
                     </div>`; 
+                }
+                
                 UI.show(UI.login);
                 UI.hide(UI.app);
             }
@@ -1314,7 +1320,7 @@
             }
         });
 
-        document.getElementById('btn-logout').addEventListener('click', () => {
+        const handleLogout = () => {
             if(isUnsaved) {
                 UI.showConfirm("您有未儲存的變更，確定要登出嗎？未儲存的資料將會遺失。", async () => {
                     await signOut(auth);
@@ -1322,7 +1328,9 @@
             } else {
                 signOut(auth);
             }
-        });
+        };
+        // Bind to both sidebar and potentially other places
+        document.getElementById('btn-logout-sidebar').addEventListener('click', handleLogout);
 
         // Navigation binds
         document.getElementById('nav-admin').addEventListener('click', (e) => { e.preventDefault(); UI.navigate('admin'); });
@@ -1339,7 +1347,6 @@
             }
         });
 
-        // Dashboard & Project Management
         async function loadProjects() {
             if (!currentUser) return;
             const listEl = document.getElementById('project-list');
@@ -1370,9 +1377,13 @@
                     const data = docSnap.data();
                     const card = document.createElement('div');
                     card.className = "bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition duration-300 cursor-pointer flex flex-col h-56 relative group hover:-translate-y-1";
-                    card.onclick = () => openProject(docSnap.id, data);
+                    card.onclick = () => window.openProject(docSnap.id, data);
+                    
+                    // Escaping quotes for HTML attributes securely
+                    const sanitizedId = docSnap.id.replace(/'/g, "\\'");
+                    
                     card.innerHTML = `
-                        <button onclick="deleteProject('${docSnap.id}', event)" class="absolute top-4 right-4 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition z-10 p-2 bg-white rounded-full shadow-sm" title="刪除專案">
+                        <button onclick="window.deleteProject('${sanitizedId}', event)" class="absolute top-4 right-4 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition z-10 p-2 bg-white rounded-full shadow-sm" title="刪除專案">
                             <i class="fas fa-trash-alt"></i>
                         </button>
                         <div class="flex justify-between items-start mb-4 pr-8">
@@ -1393,7 +1404,7 @@
         }
 
         window.deleteProject = (projectId, event) => {
-            event.stopPropagation();
+            event.stopPropagation(); // Prevent opening project
             UI.showConfirm("確定要刪除這個 Skill 嗎？\n注意：這不會刪除您已上傳到資源管理中的雲端檔案。", async () => {
                 UI.showLoader("刪除中...");
                 try {
@@ -1430,7 +1441,7 @@
             document.getElementById('tab-btn-md').click();
         };
 
-        function openProject(id, data) {
+        window.openProject = (id, data) => {
             currentProject = { id, ...data, isNew: false };
             fields.name.value = data.name || '';
             fields.desc.value = data.desc || '';
@@ -1450,7 +1461,7 @@
             UI.navigate('workspace');
             document.querySelector('.step-nav[data-step="1"]').click();
             document.getElementById('tab-btn-md').click();
-        }
+        };
 
         // Form & Markdown Sync with Debounce
         let mdUpdateTimeout = null;
@@ -1690,9 +1701,10 @@ ${fields.stop.value || '*尚未定義*'}
                         if (listErr.code === 'storage/unauthorized') {
                             listContainer.innerHTML = `<div class="text-red-500 p-4 text-sm text-center bg-red-50 rounded border border-red-100">
                                 <i class="fas fa-exclamation-triangle block text-2xl mb-2"></i> 
-                                讀取失敗：Storage 權限不足。<br>請確認 Firebase Rules 中含有 {allPaths=**} 規則。</div>`;
+                                讀取失敗：權限不足。<br>請確認 Firebase Storage 規則是否已更新為允許 {allPaths=**} 讀寫。</div>`;
                             return; // Stop execution on auth error
                         }
+                        // Other errors like folder not found are expected and safely ignored
                         console.debug(`Category ${cat} logic check passed.`, listErr);
                     }
                 }
@@ -1729,12 +1741,13 @@ ${fields.stop.value || '*尚未定義*'}
                             else if(f.name.endsWith('.png') || f.name.endsWith('.jpg')) icon = "fa-file-image text-green-500";
                             else if(f.name.endsWith('.py') || f.name.endsWith('.js')) icon = "fa-file-code text-yellow-500";
                             
+                            const safePath = f.fullPath.replace(/'/g, "\\'");
                             item.innerHTML = `
                                 <div class="flex items-center gap-3 overflow-hidden">
                                     <i class="fas ${icon} text-lg w-5 text-center shrink-0"></i>
                                     <a href="${f.url}" target="_blank" class="text-sm font-medium text-gray-700 truncate hover:text-blue hover:underline" title="${f.name}">${f.name}</a>
                                 </div>
-                                <button onclick="deleteFile('${f.fullPath}')" class="text-gray-300 hover:text-red-500 p-1.5 rounded transition opacity-0 group-hover:opacity-100" title="刪除檔案">
+                                <button onclick="window.deleteFile('${safePath}')" class="text-gray-300 hover:text-red-500 p-1.5 rounded transition opacity-0 group-hover:opacity-100" title="刪除檔案">
                                     <i class="fas fa-trash-alt"></i>
                                 </button>
                             `;
@@ -1765,7 +1778,41 @@ ${fields.stop.value || '*尚未定義*'}
             });
         };
 
-        // AI 幫我寫 (AI Draft using gemini-3.7-flash)
+        // Robust JSON Parsing Helper
+        function extractAndParseJSON(rawText) {
+            if (!rawText) throw new Error("AI 回傳內容為空");
+            let cleanText = rawText.trim();
+            
+            // Auto strip markdown code fences if model hallucinated them
+            if (cleanText.startsWith("```json")) {
+                cleanText = cleanText.substring(7);
+            } else if (cleanText.startsWith("```")) {
+                cleanText = cleanText.substring(3);
+            }
+            if (cleanText.endsWith("```")) {
+                cleanText = cleanText.substring(0, cleanText.length - 3);
+            }
+            cleanText = cleanText.trim();
+
+            try {
+                // Happy path: strict direct parse
+                return JSON.parse(cleanText);
+            } catch (err) {
+                console.warn("直接解析 JSON 失敗，啟動正則表達式提取容錯機制...", err);
+                // Fallback: extract substring between the first { and last }
+                const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+                if (jsonMatch) {
+                    try {
+                        return JSON.parse(jsonMatch[0]);
+                    } catch (regexErr) {
+                        throw new Error("AI 回應中的 JSON 結構損毀且無法自動修復，請重試。");
+                    }
+                }
+                throw new Error("無法從 AI 回應中解析出有效的資料格式。");
+            }
+        }
+
+        // AI Draft Generation (Using gemini-3.8-flash with hardened prompt)
         document.getElementById('btn-ai-draft').addEventListener('click', async () => {
             if(locks.isGeneratingAI) return;
             
@@ -1783,31 +1830,59 @@ ${fields.stop.value || '*尚未定義*'}
                 return;
             }
 
-            UI.showLoader("AI 正在思考架構中... (呼叫 gemini-3.7-flash)");
+            UI.showLoader("AI 架構師思考中... (呼叫 gemini-3.8-flash)");
             locks.isGeneratingAI = true;
             
-            const promptText = `你是一位專業的 AI 顧問，請根據以下任務描述，使用「TONY Skill 七字訣」產出工作流程草稿。
-任務描述：${desc}
-請回傳嚴格的 JSON 格式，不要包含任何 markdown code block (如 \`\`\`json)，直接回傳 JSON 物件。欄位定義如下：
-{"triggerPos":"應觸發條件","triggerNeg":"排除條件","inputReq":"必要輸入資訊","inputQ":"缺漏時提問","workflow":"工作步驟(以數字條列，動詞開頭)","decision":"判斷邏輯(If/Then)","output":"產出格式要求","validation":"驗收檢查點","stop":"安全紅線與停止條件"}`;
+            // Hardened System Prompt with Few-Shot and strict boundary instructions
+            const promptText = `你是一位專業的 AI 架構顧問，請根據使用者的任務描述，使用「TONY Skill 七字訣」產出標準工作流程草稿。
+
+【使用者任務描述】
+${desc}
+
+【輸出格式嚴格限制】
+1. 必須 100% 輸出純粹合法的 JSON 字串格式。
+2. 絕對禁止使用 Markdown 語法（不要輸出 \`\`\`json 及 \`\`\` 區塊標記）。
+3. JSON 欄位必須完全吻合以下結構，若無適當內容請填入空字串 ""。
+4. 絕對禁止輸出任何問候語、解釋性文字或 JSON 以外的符號。
+
+【JSON 結構與 Few-Shot 範例參考】
+{
+  "triggerPos": "當使用者提出撰寫社群貼文或產品宣傳需求時觸發",
+  "triggerNeg": "當使用者詢問天氣或純閒聊時不觸發",
+  "inputReq": "1. 目標受眾 (TA)\\n2. 產品核心賣點",
+  "inputQ": "若未提供目標受眾，請詢問：「請問您的主要受眾是誰？」",
+  "workflow": "1. 分析輸入內容\\n2. 檢索知識庫\\n3. 草擬 3 個吸睛標題\\n4. 完善內文細節",
+  "decision": "- 如果字數要求超過 1000，則分為上下篇。\\n- 如果涉及醫療保健，必須加上免責聲明。",
+  "output": "請使用 Markdown 標題、條列式輸出，並在最後附上來源。",
+  "validation": "- [ ] 語氣是否符合品牌規範？\\n- [ ] 是否包含所有必要賣點？",
+  "stop": "若要求產生違反法律或色情暴力內容，請拒絕並停止執行。"
+}
+
+請直接輸出 JSON 字串：`;
 
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=${apiKey}`, {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         contents: [{ parts: [{ text: promptText }] }],
-                        generationConfig: { responseMimeType: "application/json" }
+                        generationConfig: { 
+                            responseMimeType: "application/json",
+                            temperature: 0.2 // Lower temp for more stable structural output
+                        }
                     })
                 });
 
                 if (!response.ok) {
                     const err = await response.json();
-                    throw new Error(err.error?.message || "API 呼叫失敗");
+                    throw new Error(err.error?.message || "API 呼叫失敗，請檢查 API Key 是否有效。");
                 }
 
                 const data = await response.json();
-                const result = JSON.parse(data.candidates[0].content.parts[0].text);
+                const rawResponseText = data.candidates[0].content.parts[0].text;
+                
+                // Use robust parsing pipeline
+                const result = extractAndParseJSON(rawResponseText);
 
                 fields.triggerPos.value = result.triggerPos || '';
                 fields.triggerNeg.value = result.triggerNeg || '';
@@ -1823,8 +1898,8 @@ ${fields.stop.value || '*尚未定義*'}
                 window.debouncedUpdateMarkdown();
                 UI.showAlert("AI 草稿已生成！請切換左側步驟逐一審閱與修改。", "生成成功");
             } catch (err) {
-                console.error(err);
-                UI.showAlert("AI 生成失敗：" + err.message + "\n\n請確認您的 API 金鑰是否正確或具有足夠額度。", "錯誤");
+                console.error("AI 容錯生成異常:", err);
+                UI.showAlert("AI 生成失敗：" + err.message, "系統錯誤");
             } finally {
                 locks.isGeneratingAI = false;
                 UI.hideLoader();
@@ -1892,7 +1967,7 @@ ${fields.stop.value || '*尚未定義*'}
                 }
                 
             } catch (err) {
-                console.error(err);
+                console.error("ZIP Generation Error", err);
                 UI.showAlert("匯出 ZIP 失敗: " + err.message, "錯誤");
             } finally {
                 UI.hideLoader();
@@ -1945,12 +2020,12 @@ ${fields.stop.value || '*尚未定義*'}
                         const toggleIcon = data.role === 'admin' ? 'fa-arrow-down' : 'fa-arrow-up';
                         const toggleColor = data.role === 'admin' ? 'text-orange-500 hover:bg-orange-50' : 'text-blue hover:bg-blue/10';
                         actionHtml = `
-                            <button onclick="toggleUserRole('${data.uid}', '${data.role}')" class="p-1.5 rounded ${toggleColor} mx-1 transition border border-transparent hover:border-current" title="${toggleTxt}"><i class="fas ${toggleIcon}"></i></button>
-                            <button onclick="deleteUserProfile('${data.uid}')" class="p-1.5 rounded text-red-500 hover:bg-red-50 mx-1 transition border border-transparent hover:border-red-200" title="刪除檔案"><i class="fas fa-trash-alt"></i></button>
+                            <button onclick="window.toggleUserRole('${data.uid}', '${data.role}')" class="p-1.5 rounded ${toggleColor} mx-1 transition border border-transparent hover:border-current" title="${toggleTxt}"><i class="fas ${toggleIcon}"></i></button>
+                            <button onclick="window.deleteUserProfile('${data.uid}')" class="p-1.5 rounded text-red-500 hover:bg-red-50 mx-1 transition border border-transparent hover:border-red-200" title="刪除會員"><i class="fas fa-trash-alt"></i></button>
                         `;
                     } else if (currentUserProfile.role === 'admin' && data.role === 'user') {
                          actionHtml = `
-                            <button onclick="deleteUserProfile('${data.uid}')" class="p-1.5 rounded text-red-500 hover:bg-red-50 mx-1 transition border border-transparent hover:border-red-200" title="刪除檔案"><i class="fas fa-trash-alt"></i></button>
+                            <button onclick="window.deleteUserProfile('${data.uid}')" class="p-1.5 rounded text-red-500 hover:bg-red-50 mx-1 transition border border-transparent hover:border-red-200" title="刪除會員"><i class="fas fa-trash-alt"></i></button>
                         `;
                     } else {
                         actionHtml = `<span class="text-xs text-gray-400">-</span>`;
@@ -1973,7 +2048,7 @@ ${fields.stop.value || '*尚未定義*'}
                 });
                 
             } catch(e) {
-                console.error(e);
+                console.error("載入管理員數據失敗", e);
                 tbody.innerHTML = `<tr><td colspan="6" class="text-center py-12 text-red-500 bg-red-50"><i class="fas fa-exclamation-triangle mb-2 text-xl"></i><br>無法讀取資料: ${e.message}</td></tr>`;
             }
         }
@@ -2030,7 +2105,7 @@ ${fields.stop.value || '*尚未定義*'}
             document.body.removeChild(link);
         });
 
-        // AI Business Report Generation (Using gemini-3.7-flash)
+        // AI Business Report Generation (Using gemini-3.8-flash)
         document.getElementById('btn-generate-report').addEventListener('click', async () => {
             if (locks.isGeneratingAI) return;
 
@@ -2074,9 +2149,10 @@ ${fields.stop.value || '*尚未定義*'}
                 stats.totalLoginsInRange += (u.loginCount || 1);
             });
 
-            UI.showLoader("AI 正在深度分析數據中... (呼叫 gemini-3.7-flash)");
+            UI.showLoader("AI 正在深度分析數據中... (呼叫 gemini-3.8-flash)");
             locks.isGeneratingAI = true;
             
+            // Hardened Prompt to ensure strict Markdown output without conversational fluff
             const promptText = `你是一位專業的商業數據分析顧問。以下是「TONY Skill Builder」平台在 ${startDate} 到 ${endDate} 期間的會員註冊與活躍數據。
 請幫我撰寫一份結構專業、具洞察力的「商業分析報告」。
 
@@ -2086,33 +2162,47 @@ ${fields.stop.value || '*尚未定義*'}
 - 身分分佈：${JSON.stringify(stats.identityBreakdown)}
 - 權限分佈：${JSON.stringify(stats.roleBreakdown)}
 
-【報告要求】
-請使用 Markdown 格式輸出，結構包含：
-1. 執行摘要 (Executive Summary)
-2. 成長動能分析 (Growth Analysis)
-3. 族群輪廓洞察 (Demographic Insights)
-4. 針對 TONY 老師的下一步商業建議 (Next Step Recommendations)
-直接輸出報告本文，不需其他問候語。`;
+【報告要求嚴格限制】
+1. 請嚴格使用 Markdown 格式輸出。
+2. 結構必須包含：
+   - 執行摘要 (Executive Summary)
+   - 成長動能分析 (Growth Analysis)
+   - 族群輪廓洞察 (Demographic Insights)
+   - 針對 TONY 老師的下一步商業建議 (Next Step Recommendations)
+3. 絕對禁止輸出任何問候語 (如"你好") 或解釋性冗言，直接輸出報告本文，確保解析與呈現乾淨。`;
 
             try {
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.7-flash:generateContent?key=${apiKey}`, {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+                    body: JSON.stringify({ 
+                        contents: [{ parts: [{ text: promptText }] }],
+                        generationConfig: {
+                            temperature: 0.4
+                        }
+                    })
                 });
 
-                if (!response.ok) throw new Error("API 呼叫失敗，請檢查 API Key 或額度限制");
+                if (!response.ok) {
+                    const errRes = await response.json();
+                    throw new Error(errRes.error?.message || "API 呼叫失敗，請檢查 API Key 或額度限制");
+                }
 
                 const data = await response.json();
-                const reportMd = data.candidates[0].content.parts[0].text;
+                let reportMd = data.candidates[0].content.parts[0].text;
                 
-                document.getElementById('ai-report-content').innerHTML = marked.parse(reportMd);
+                // Clean any stray markdown fencing if model misbehaves despite instructions
+                if (reportMd.startsWith("```markdown")) reportMd = reportMd.substring(11);
+                else if (reportMd.startsWith("```")) reportMd = reportMd.substring(3);
+                if (reportMd.endsWith("```")) reportMd = reportMd.substring(0, reportMd.length - 3);
+
+                document.getElementById('ai-report-content').innerHTML = marked.parse(reportMd.trim());
                 window.currentReportHtml = document.getElementById('ai-report-content').innerHTML;
                 UI.show(document.getElementById('btn-export-word'));
                 
             } catch (err) {
-                console.error(err);
-                UI.showAlert("AI 報告生成失敗：" + err.message, "錯誤");
+                console.error("Report Generation Error:", err);
+                UI.showAlert("AI 報告生成失敗：" + err.message, "系統錯誤");
             } finally {
                 locks.isGeneratingAI = false;
                 UI.hideLoader();
