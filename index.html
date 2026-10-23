@@ -64,7 +64,7 @@
 </head>
 <body class="h-screen flex overflow-hidden text-gray-800 bg-graybg">
 
-    <!-- Loading Overlay (Premium Blur) -->
+    <!-- Loading Overlay -->
     <div id="global-loader" class="fixed inset-0 bg-navy/70 backdrop-blur-sm z-[200] flex flex-col items-center justify-center hide text-white transition-opacity duration-300">
         <i class="fas fa-circle-notch fa-spin text-5xl text-gold mb-4 shadow-lg rounded-full"></i>
         <p id="loader-text" class="text-xl font-medium tracking-wide">處理中...</p>
@@ -450,9 +450,18 @@
                     <!-- Basic Info -->
                     <div class="p-5 border-b border-gray-100 bg-white shrink-0 relative z-10 shadow-sm">
                         <!-- 限制 maxLength 63 字元 -->
-                        <input type="text" id="skill-name" maxlength="63" placeholder="輸入 Skill 英文名稱 (如: marketing-copywriter, 上限63字元)" class="w-full text-2xl font-bold text-navy bg-transparent border-none focus:outline-none mb-3 placeholder-gray-300" oninput="debouncedUpdateMarkdown()">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Skill 名稱 (Kebab-case, max 63)</label>
+                            <span id="char-count-name" class="text-xs text-gray-400 font-mono">0/63</span>
+                        </div>
+                        <input type="text" id="skill-name" maxlength="63" placeholder="例如: marketing-copywriter-v1" class="w-full text-2xl font-bold text-navy bg-transparent border-none focus:outline-none mb-3 placeholder-gray-300 transition-colors" oninput="debouncedUpdateMarkdown(); document.getElementById('char-count-name').innerText = this.value.length + '/63';">
+                        
                         <!-- 限制 maxLength 1024 字元 -->
-                        <textarea id="skill-desc" maxlength="1024" placeholder="簡單描述這個 Skill 的主要任務與情境... (上限 1024 字元，Gemini 會依此段落判斷是否觸發技能)" class="w-full text-sm text-gray-600 bg-gray-50 border border-gray-100 rounded-lg p-3 focus:outline-none focus:ring-1 focus:ring-cyan focus:bg-white transition resize-none h-20" oninput="debouncedUpdateMarkdown()"></textarea>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">任務描述 (觸發關鍵, max 1024)</label>
+                            <span id="char-count-desc" class="text-xs text-gray-400 font-mono">0/1024</span>
+                        </div>
+                        <textarea id="skill-desc" maxlength="1024" placeholder="簡單描述這個 Skill 的主要任務與情境... (上限 1024 字元，Gemini 會依此段落判斷是否觸發技能)" class="w-full text-sm text-gray-600 bg-gray-50 border border-gray-100 rounded-lg p-3 focus:outline-none focus:ring-1 focus:ring-cyan focus:bg-white transition resize-none h-20" oninput="debouncedUpdateMarkdown(); document.getElementById('char-count-desc').innerText = this.value.length + '/1024';"></textarea>
                     </div>
 
                     <div class="flex flex-1 overflow-hidden">
@@ -767,9 +776,34 @@
                             </p>
                         </section>
 
-                        <!-- Section 2: 釐清概念 -->
+                        <!-- Section 2: 完整 Skill 的三層架構 -->
                         <section>
-                            <h2 class="text-2xl font-bold text-navy flex items-center gap-2 mb-4 border-b-2 border-cyan pb-2 w-max pr-6"><i class="fas fa-balance-scale text-gold"></i> 1 | 先釐清：Skill 不是什麼</h2>
+                            <h2 class="text-2xl font-bold text-navy flex items-center gap-2 mb-4 border-b-2 border-cyan pb-2 w-max pr-6"><i class="fas fa-layer-group text-gold"></i> 2 | 完整 Skill 的三層架構</h2>
+                            <p class="text-gray-700 leading-relaxed mb-4">
+                                一個能真正在企業落地的完整 Skill，不能只有冷冰冰的執行指令，必須同時具備以下三層體驗。系統已將此邏輯預設寫入 SKILL.md 的「啟動與引導協議」中：
+                            </p>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                <div class="bg-blue/5 border border-blue/20 p-5 rounded-xl hover:shadow-md transition">
+                                    <h4 class="font-bold text-navy mb-2"><i class="fas fa-info-circle text-blue mr-2"></i>第一層：使用前的介紹</h4>
+                                    <p class="text-sm text-gray-600">讓使用者知道這是什麼。包含：用途、適用對象、使用時機、需要準備的資料。</p>
+                                </div>
+                                <div class="bg-cyan/5 border border-cyan/20 p-5 rounded-xl hover:shadow-md transition">
+                                    <h4 class="font-bold text-navy mb-2"><i class="fas fa-hand-pointer text-cyan mr-2"></i>第二層：使用時的引導</h4>
+                                    <p class="text-sm text-gray-600">降低使用門檻。包含：啟動選單、範例問句、缺資料時的友善協助提示。</p>
+                                </div>
+                                <div class="bg-gold/5 border border-gold/20 p-5 rounded-xl hover:shadow-md transition">
+                                    <h4 class="font-bold text-navy mb-2"><i class="fas fa-cogs text-gold mr-2"></i>第三層：背後的執行規則</h4>
+                                    <p class="text-sm text-gray-600">您透過七字訣定義的黑盒子。包含：流程、情境、評分與品質要求。</p>
+                                </div>
+                            </div>
+                            <div class="bg-gray-100 p-4 rounded-lg text-gray-700 font-medium text-center border border-gray-200">
+                                💡 在本系統打包的 Skill 中，當使用者輸入「開始」時，AI 都會自動觸發前兩層的引導選單。
+                            </div>
+                        </section>
+
+                        <!-- Section 3: 釐清概念 -->
+                        <section>
+                            <h2 class="text-2xl font-bold text-navy flex items-center gap-2 mb-4 border-b-2 border-cyan pb-2 w-max pr-6"><i class="fas fa-balance-scale text-gold"></i> 3 | 先釐清：Skill 不是什麼</h2>
                             <div class="overflow-x-auto mb-4 rounded-xl border border-gray-200 shadow-sm">
                                 <table class="w-full text-sm text-left">
                                     <thead class="bg-gray-50 text-navy uppercase font-bold border-b border-gray-200">
@@ -782,19 +816,16 @@
                                     </tbody>
                                 </table>
                             </div>
-                            <div class="bg-gold/10 p-4 rounded-lg text-navy font-bold text-center border border-gold/30">
-                                💡 一句話記憶：GEM 比較像「一個人」；Skill 比較像「這個人採用的工作方法」。
-                            </div>
                         </section>
 
-                        <!-- Section 3: 架構 -->
+                        <!-- Section 4: 架構 -->
                         <section>
-                            <h2 class="text-2xl font-bold text-navy flex items-center gap-2 mb-4 border-b-2 border-cyan pb-2 w-max pr-6"><i class="fas fa-folder-tree text-gold"></i> 3 | Skill 資料夾：一個指揮中心、四個支援部門 (v2.0 新增)</h2>
+                            <h2 class="text-2xl font-bold text-navy flex items-center gap-2 mb-4 border-b-2 border-cyan pb-2 w-max pr-6"><i class="fas fa-folder-tree text-gold"></i> 4 | Skill 資料夾：一個指揮中心、四個支援部門 (v2.0 新增)</h2>
                             <p class="text-gray-700 leading-relaxed mb-4">
                                 在 v2.0 企業版中，我們不僅支援文字指令，更加入了強大的<strong>雲端檔案管理與自動打包</strong>功能。一個完整的 Skill 就像一個微型應用程式，包含指揮中心與四個支援部門：
                             </p>
                             <div class="bg-gray-800 text-green-400 p-6 rounded-xl font-mono text-sm leading-loose shadow-inner mb-6 overflow-x-auto">
-                                <div class="text-white mb-2">my-skill/</div>
+                                <div class="text-white mb-2">my-skill-name/ <span class="text-gray-400 text-xs">(匯出時自動建立 Kebab-case 主資料夾)</span></div>
                                 <div>├── <span class="text-yellow-300 font-bold">SKILL.md</span>             <span class="text-gray-400"># 指揮中心：必要 (您在左側七步完成的內容)</span></div>
                                 <div>├── <span class="text-blue-300 font-bold">references/</span>            <span class="text-gray-400"># 知識庫：給 AI 讀的 (如 PDF 規章、過去的行銷案例)</span></div>
                                 <div>├── <span class="text-blue-300 font-bold">scripts/</span>               <span class="text-gray-400"># 自動化機器：選用 (需精準執行的 Python/JS 腳本)</span></div>
@@ -810,13 +841,13 @@
                                     <li><strong>在【做】(Workflow)：</strong>「請讀取 <code>references/brand_guideline.pdf</code>，確認語氣不可違反品牌規定。」</li>
                                     <li><strong>在【交】(Output)：</strong>「請將完成的文字，填入 <code>assets/monthly_report.docx</code> 的格式中，並在右上角貼上 <code>assets/logo.png</code>。」</li>
                                 </ul>
-                                <p class="text-gray-600 text-sm mt-3">💡 當您點擊「匯出 ZIP」時，系統會自動將 <code>SKILL.md</code> 與這些雲端檔案完美打包在一起！</p>
+                                <p class="text-gray-600 text-sm mt-3">💡 當您點擊「匯出 ZIP」時，系統會自動將 <code>SKILL.md</code> 與這些雲端檔案完美打包在一個 Kebab-case 命名的主資料夾中！</p>
                             </div>
                         </section>
 
-                        <!-- Section 4: 七字訣詳解 -->
+                        <!-- Section 5: 七字訣詳解 -->
                         <section>
-                            <h2 class="text-2xl font-bold text-navy flex items-center gap-2 mb-6 border-b-2 border-cyan pb-2 w-max pr-6"><i class="fas fa-star text-gold"></i> 4 | TONY Skill 七字訣</h2>
+                            <h2 class="text-2xl font-bold text-navy flex items-center gap-2 mb-6 border-b-2 border-cyan pb-2 w-max pr-6"><i class="fas fa-star text-gold"></i> 5 | TONY Skill 七字訣</h2>
                             
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <!-- Card 1 -->
@@ -885,9 +916,9 @@
                             </div>
                         </section>
 
-                        <!-- Section 5: 品質指標 -->
+                        <!-- Section 6: 品質指標 -->
                         <section>
-                            <h2 class="text-2xl font-bold text-navy flex items-center gap-2 mb-4 border-b-2 border-cyan pb-2 w-max pr-6"><i class="fas fa-check-double text-gold"></i> 7 | 好的 Skill 看四個穩定度</h2>
+                            <h2 class="text-2xl font-bold text-navy flex items-center gap-2 mb-4 border-b-2 border-cyan pb-2 w-max pr-6"><i class="fas fa-check-double text-gold"></i> 6 | 好的 Skill 看四個穩定度</h2>
                             <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
                                 <table class="w-full text-sm text-left">
                                     <thead class="bg-gray-50 text-navy uppercase font-bold border-b border-gray-200">
@@ -958,7 +989,7 @@
         let currentProject = null;
         let isUnsaved = false;
         
-        // Async Action Locks (Crucial for preventing race conditions)
+        // Async Action Locks
         const locks = {
             isRegistering: false,
             isGeneratingAI: false,
@@ -1032,7 +1063,6 @@
             },
             
             navigate(view) {
-                // Reset Nav active states
                 document.querySelectorAll('.nav-item').forEach(el => {
                     el.classList.remove('bg-white/10', 'text-cyan', 'shadow-sm', 'border-transparent');
                     el.classList.add('text-gray-300');
@@ -1156,13 +1186,12 @@
         document.getElementById('link-back-login').addEventListener('click', (e) => { e.preventDefault(); UI.switchAuthForm('login'); });
         document.getElementById('link-back-login2').addEventListener('click', (e) => { e.preventDefault(); UI.switchAuthForm('login'); });
 
-        // Sync user profile to Firestore `userProfiles` collection
+        // Sync user profile
         async function syncUserProfile(user, additionalData = null) {
             const profileRef = doc(db, "artifacts", appId, "userProfiles", user.uid);
             const docSnap = await getDoc(profileRef);
             
             let role = 'user';
-            // Auto assign superadmin based on Email
             if(user.email === SUPER_ADMIN_EMAIL) role = 'superadmin';
             
             if (!docSnap.exists()) {
@@ -1180,7 +1209,6 @@
                 return data;
             } else {
                 const currentData = docSnap.data();
-                // Ensure superadmin cannot be downgraded even if doc exists
                 if (user.email === SUPER_ADMIN_EMAIL) currentData.role = 'superadmin';
                 await setDoc(profileRef, {
                     loginCount: (currentData.loginCount || 1) + 1,
@@ -1192,10 +1220,9 @@
         }
 
         onAuthStateChanged(auth, async (user) => {
-            if (locks.isRegistering) return; // Prevent race condition when registering
+            if (locks.isRegistering) return;
 
             if (user) {
-                // Email Verification Check (Double Opt-in)
                 if (!user.emailVerified) {
                     UI.showAlert("您的信箱尚未驗證！\n請至信箱點選驗證連結後再次登入。\n\n(若未收到，請檢查垃圾郵件匣)", "拒絕登入");
                     await signOut(auth);
@@ -1210,12 +1237,10 @@
                     UI.hide(UI.login);
                     UI.show(UI.app);
                     
-                    // UI Update
                     const realName = currentUserProfile.realName || "使用者";
                     document.getElementById('user-name').innerText = realName;
                     document.getElementById('user-avatar-text').innerText = realName.charAt(0).toUpperCase();
                     
-                    // RBAC UI updates
                     const badge = document.getElementById('user-role-badge');
                     if (currentUserProfile.role === 'superadmin' || currentUserProfile.role === 'admin') {
                         badge.innerText = currentUserProfile.role.toUpperCase();
@@ -1235,7 +1260,6 @@
                     UI.hideLoader();
                 }
             } else {
-                // Reset State on Logout securely
                 currentUser = null;
                 currentUserProfile = null;
                 currentProject = null;
@@ -1255,7 +1279,7 @@
             }
         });
 
-        // Email/Password Registration (Race Condition Fixed)
+        // Register
         document.getElementById('form-register').addEventListener('submit', async (e) => {
             e.preventDefault();
             if (locks.isRegistering) return;
@@ -1266,20 +1290,20 @@
             const identity = document.getElementById('reg-identity').value;
             
             UI.showLoader("正在為您建立帳號...");
-            locks.isRegistering = true; // Lock Auth State Change
+            locks.isRegistering = true; 
             try {
                 const userCred = await createUserWithEmailAndPassword(auth, email, pwd);
                 await syncUserProfile(userCred.user, { realName: name, identity: identity });
                 await sendEmailVerification(userCred.user);
-                await signOut(auth); // Force logout for verification
+                await signOut(auth); 
                 
-                locks.isRegistering = false; // Unlock
+                locks.isRegistering = false;
                 UI.hideLoader();
                 UI.switchAuthForm('login');
                 UI.showAlert(`註冊成功！\n\n系統已發送驗證信至:\n${email}\n\n請前往點擊驗證連結後才能登入。\n(提醒：若沒看到請檢查垃圾郵件匣)`, "請驗證信箱");
                 document.getElementById('form-register').reset();
             } catch (error) {
-                locks.isRegistering = false; // Unlock
+                locks.isRegistering = false; 
                 UI.hideLoader();
                 let msg = error.message;
                 if(error.code === 'auth/email-already-in-use') msg = '此信箱已被註冊。';
@@ -1288,7 +1312,7 @@
             }
         });
 
-        // Email/Password Login
+        // Login
         document.getElementById('form-login').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('login-email').value.trim();
@@ -1321,6 +1345,7 @@
             }
         });
 
+        // Logout
         const handleLogout = () => {
             if(isUnsaved) {
                 UI.showConfirm("您有未儲存的變更，確定要登出嗎？未儲存的資料將會遺失。", async () => {
@@ -1330,22 +1355,17 @@
                 signOut(auth);
             }
         };
-        // Bind to both sidebar and potentially other places
         document.getElementById('btn-logout-sidebar').addEventListener('click', handleLogout);
 
-        // Navigation binds
+        // Navigation
         document.getElementById('nav-admin').addEventListener('click', (e) => { e.preventDefault(); UI.navigate('admin'); });
         document.getElementById('nav-manual').addEventListener('click', (e) => { e.preventDefault(); UI.navigate('manual'); });
         document.getElementById('nav-dashboard').addEventListener('click', (e) => { e.preventDefault(); UI.navigate('dashboard'); });
         document.getElementById('nav-new-skill').addEventListener('click', (e) => { 
             e.preventDefault(); 
             if(isUnsaved) {
-                UI.showConfirm("建立新專案將放棄目前未儲存的變更，是否繼續？", () => {
-                    window.createNewProject();
-                });
-            } else {
-                window.createNewProject(); 
-            }
+                UI.showConfirm("建立新專案將放棄目前未儲存的變更，是否繼續？", () => { window.createNewProject(); });
+            } else { window.createNewProject(); }
         });
 
         async function loadProjects() {
@@ -1367,7 +1387,6 @@
                 }
                 listEl.innerHTML = '';
                 
-                // Sort client-side to avoid index requirement errors
                 const docs = snapshot.docs.sort((a, b) => {
                     const timeA = a.data().updatedAt?.toMillis() || 0;
                     const timeB = b.data().updatedAt?.toMillis() || 0;
@@ -1380,7 +1399,6 @@
                     card.className = "bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition duration-300 cursor-pointer flex flex-col h-56 relative group hover:-translate-y-1";
                     card.onclick = () => window.openProject(docSnap.id, data);
                     
-                    // Escaping quotes for HTML attributes securely
                     const sanitizedId = docSnap.id.replace(/'/g, "\\'");
                     
                     card.innerHTML = `
@@ -1405,7 +1423,7 @@
         }
 
         window.deleteProject = (projectId, event) => {
-            event.stopPropagation(); // Prevent opening project
+            event.stopPropagation();
             UI.showConfirm("確定要刪除這個 Skill 嗎？\n注意：這不會刪除您已上傳到資源管理中的雲端檔案。", async () => {
                 UI.showLoader("刪除中...");
                 try {
@@ -1413,16 +1431,12 @@
                     await loadProjects();
                     if (currentProject && currentProject.id === projectId) {
                         currentProject = null;
-                        Object.values(fields).forEach(f => f.value = ''); // clear form
+                        Object.values(fields).forEach(f => f.value = '');
                         isUnsaved = false;
                         updateSaveStatus();
-                        // if currently in workspace, kick out to dashboard
-                        if(!UI.workspace.classList.contains('hide')){
-                            UI.navigate('dashboard');
-                        }
+                        if(!UI.workspace.classList.contains('hide')){ UI.navigate('dashboard'); }
                     }
                 } catch (err) {
-                    console.error("刪除失敗", err);
                     UI.showAlert("刪除失敗: " + err.message, "錯誤");
                 } finally {
                     UI.hideLoader();
@@ -1436,10 +1450,10 @@
             isUnsaved = true;
             updateSaveStatus();
             UI.navigate('workspace');
-            // Select first step automatically
             document.querySelector('.step-nav[data-step="1"]').click();
-            // Switch to MD tab automatically
             document.getElementById('tab-btn-md').click();
+            document.getElementById('char-count-name').innerText = '0/63';
+            document.getElementById('char-count-desc').innerText = '0/1024';
         };
 
         window.openProject = (id, data) => {
@@ -1457,6 +1471,9 @@
             fields.validation.value = c.validation || '';
             fields.stop.value = c.stop || '';
             
+            document.getElementById('char-count-name').innerText = fields.name.value.length + '/63';
+            document.getElementById('char-count-desc').innerText = fields.desc.value.length + '/1024';
+
             isUnsaved = false;
             updateSaveStatus();
             UI.navigate('workspace');
@@ -1464,16 +1481,12 @@
             document.getElementById('tab-btn-md').click();
         };
 
-        // Form & Markdown Sync with Debounce
         let mdUpdateTimeout = null;
         window.debouncedUpdateMarkdown = () => {
             isUnsaved = true;
             updateSaveStatus();
-            
             if (mdUpdateTimeout) clearTimeout(mdUpdateTimeout);
-            mdUpdateTimeout = setTimeout(() => {
-                updateMarkdown();
-            }, 300); // 300ms debounce
+            mdUpdateTimeout = setTimeout(() => { updateMarkdown(); }, 300);
         };
 
         function updateSaveStatus() {
@@ -1487,27 +1500,31 @@
             }
         }
 
-        // 輔助函式：確保名稱符合 Kebab-case，並加入 Gemini 63 字元長度限制
+        // 嚴格 Kebab-case 與長度轉換
         function formatKebabCase(str) {
             let formatted = (str || 'untitled-skill')
                 .toLowerCase()
-                .replace(/[\s_]+/g, '-') // 將空格與底線轉換為連字號
-                .replace(/[^a-z0-9\-]/g, '') // 嚴格限制：僅保留小寫字母、數字與連字號
-                .replace(/\-+/g, '-') // 移除連續的連字號
-                .replace(/^\-|\-$/g, ''); // 移除頭尾連字號
-                
+                .replace(/[\s_]+/g, '-') 
+                .replace(/[^a-z0-9\-]/g, '') 
+                .replace(/\-+/g, '-') 
+                .replace(/^\-|\-$/g, '');
             if (!formatted) formatted = 'untitled-skill';
-            
-            // 嚴格裁切至 Gemini 上限的 63 個字元
             return formatted.substring(0, 63); 
         }
 
+        // 強制注入第0層: 啟動與引導協議
         function generateMarkdownString() {
             const nameStr = formatKebabCase(fields.name.value);
             const descStr = fields.desc.value.trim() || '請輸入描述以說明此 Skill 的任務目的。';
             return `
 # ${nameStr}
 > ${descStr}
+
+## 0. 啟動與引導協議 (Initialization Protocol)
+**【系統強制指令】當使用者輸入「開始」或首次觸發此 Skill 時，請先暫停執行核心任務，並向使用者輸出以下三層引導介面：**
+1. **使用前的介紹**：說明本技能的用途、適用對象、使用時機，以及需要準備的資料。
+2. **使用時的引導**：提供快捷啟動選單、2~3 個範例問句，並友善告知「若資料不齊全，我會主動提問協助您」。
+*(待使用者回覆或選擇後，再進入下方的正式執行規則)*
 
 ## 1. 叫 (Trigger) - 觸發條件
 ### 應觸發
@@ -1542,10 +1559,10 @@ ${fields.stop.value || '*尚未定義*'}
             const mdString = generateMarkdownString();
             document.getElementById('tab-content-md').innerHTML = marked.parse(mdString);
             if(currentProject) currentProject.name = fields.name.value;
-            UI.topbarTitle.innerText = currentProject?.name || "編輯新 Skill";
+            UI.topbarTitle.innerText = formatKebabCase(currentProject?.name) || "編輯新 Skill";
         }
 
-        // Save Project to Firestore
+        // Save Project
         document.getElementById('btn-save-project').addEventListener('click', async () => {
             if (!currentUser || !currentProject) return;
             if (locks.isSaving) return;
@@ -1570,20 +1587,15 @@ ${fields.stop.value || '*尚未定義*'}
                     },
                     updatedAt: serverTimestamp()
                 };
-                if (currentProject.isNew) {
-                    projectData.createdAt = serverTimestamp();
-                }
+                if (currentProject.isNew) { projectData.createdAt = serverTimestamp(); }
                 
                 await setDoc(projectRef, projectData, { merge: true });
                 isUnsaved = false;
                 currentProject.isNew = false;
                 updateSaveStatus();
-                
-                // Hide the unsaved overlay in files tab
                 UI.hide(document.getElementById('unsaved-overlay'));
                 
             } catch (err) {
-                console.error(err);
                 UI.showAlert("儲存失敗，請檢查網路狀態。 (" + err.message + ")", "錯誤");
             } finally {
                 locks.isSaving = false;
@@ -1599,29 +1611,22 @@ ${fields.stop.value || '*尚未定義*'}
                 const target = e.currentTarget; 
                 const step = target.dataset.step;
                 
-                // Update Nav Visuals
                 navBtns.forEach(b => {
                     b.classList.remove('active', 'bg-navy', 'text-white', 'border-transparent', 'shadow-md', 'scale-110', 'z-20');
-                    b.classList.add('bg-white', 'text-gray-400', 'border-gray-200');
-                    b.classList.add('hover:text-navy', 'hover:border-gray-300');
+                    b.classList.add('bg-white', 'text-gray-400', 'border-gray-200', 'hover:text-navy', 'hover:border-gray-300');
                 });
                 target.classList.remove('bg-white', 'text-gray-400', 'border-gray-200', 'hover:text-navy', 'hover:border-gray-300');
                 target.classList.add('active', 'bg-navy', 'text-white', 'border-transparent', 'shadow-md', 'scale-110', 'z-20');
                 
-                if(step === "7") {
-                     target.classList.replace('bg-navy', 'bg-red-600');
-                }
+                if(step === "7") { target.classList.replace('bg-navy', 'bg-red-600'); }
                 
-                // Update Panels
                 panels.forEach(p => UI.hide(p));
-                const activePanel = document.getElementById(`panel-${step}`);
-                UI.show(activePanel);
-                
+                UI.show(document.getElementById(`panel-${step}`));
                 document.getElementById('form-panels').scrollTop = 0;
             });
         });
 
-        // V2.0 Right Panel Tabs (MD vs Files)
+        // Right Panel Tabs
         const btnTabMd = document.getElementById('tab-btn-md');
         const btnTabFiles = document.getElementById('tab-btn-files');
         const contentMd = document.getElementById('tab-content-md');
@@ -1639,10 +1644,7 @@ ${fields.stop.value || '*尚未定義*'}
             btnTabMd.className = "px-4 py-1.5 text-sm font-bold rounded-md text-gray-500 hover:text-navy hover:bg-white/50 transition";
             UI.hide(contentMd);
             UI.show(contentFiles);
-            // Auto load files if project exists
-            if(currentProject && !currentProject.isNew) {
-                loadProjectFiles();
-            }
+            if(currentProject && !currentProject.isNew) { loadProjectFiles(); }
         });
 
         const fileInput = document.getElementById('file-upload-input');
@@ -1664,28 +1666,22 @@ ${fields.stop.value || '*尚未定義*'}
                 for(let i=0; i<files.length; i++) {
                     const file = files[i];
                     if(file.size > 10 * 1024 * 1024) {
-                        UI.showAlert(`檔案 ${file.name} 超過 10MB，建議上傳較小的檔案以利 AI 處理。`, "檔案過大");
+                        UI.showAlert(`檔案 ${file.name} 超過 10MB，建議上傳較小檔案。`, "檔案過大");
                         continue;
                     }
-                    
                     uploadText.innerText = `上傳中... (${i+1}/${files.length})`;
-                    
                     const filePath = `artifacts/${appId}/users/${currentUser.uid}/projects/${currentProject.id}/${category}/${file.name}`;
                     const storageRef = ref(storage, filePath);
-                    
                     await uploadBytesResumable(storageRef, file);
                     successCount++;
                 }
             } catch (err) {
-                console.error("Upload error:", err);
                 UI.showAlert("上傳失敗：" + err.message, "錯誤");
             } finally {
-                fileInput.value = ""; // Reset input
+                fileInput.value = ""; 
                 UI.hide(uploadOverlay);
                 locks.isUploading = false;
-                if(successCount > 0) {
-                    loadProjectFiles(); // Refresh list
-                }
+                if(successCount > 0) { loadProjectFiles(); }
             }
         });
 
@@ -1706,22 +1702,14 @@ ${fields.stop.value || '*尚未定義*'}
                         const res = await listAll(folderRef);
                         for(const itemRef of res.items) {
                             const url = await getDownloadURL(itemRef);
-                            allFiles.push({
-                                name: itemRef.name,
-                                category: cat,
-                                fullPath: itemRef.fullPath,
-                                url: url
-                            });
+                            allFiles.push({ name: itemRef.name, category: cat, fullPath: itemRef.fullPath, url: url });
                         }
                     } catch(listErr) {
                         if (listErr.code === 'storage/unauthorized') {
                             listContainer.innerHTML = `<div class="text-red-500 p-4 text-sm text-center bg-red-50 rounded border border-red-100">
-                                <i class="fas fa-exclamation-triangle block text-2xl mb-2"></i> 
-                                讀取失敗：權限不足。<br>請確認 Firebase Storage 規則是否允許 {allPaths=**} 讀寫。</div>`;
-                            return; // Stop execution on auth error
+                                <i class="fas fa-exclamation-triangle block text-2xl mb-2"></i> 讀取失敗：權限不足。<br>請確認 Firebase Storage 規則是否允許 {allPaths=**} 讀寫。</div>`;
+                            return; 
                         }
-                        // Other errors like folder not found are expected and safely ignored
-                        console.debug(`Category ${cat} logic check passed.`, listErr);
                     }
                 }
                 
@@ -1730,13 +1718,11 @@ ${fields.stop.value || '*尚未定義*'}
                 if(allFiles.length === 0) {
                     listContainer.innerHTML = `
                         <div class="flex flex-col items-center justify-center h-full text-gray-400 text-sm py-10">
-                            <i class="fas fa-folder-open text-4xl mb-3 text-gray-200"></i>
-                            尚未上傳任何檔案
+                            <i class="fas fa-folder-open text-4xl mb-3 text-gray-200"></i>尚未上傳任何檔案
                         </div>`;
                     return;
                 }
                 
-                // Render List grouped by category
                 listContainer.innerHTML = '';
                 const catNames = { 'references': '知識庫', 'assets': '模板素材', 'scripts': '自動化' };
                 
@@ -1772,9 +1758,7 @@ ${fields.stop.value || '*尚未定義*'}
                         listContainer.appendChild(groupDiv);
                     }
                 });
-                
             } catch (err) {
-                console.error("載入檔案列表錯誤", err);
                 listContainer.innerHTML = `<div class="text-red-500 p-3 text-sm text-center"><i class="fas fa-exclamation-triangle"></i> 無法讀取檔案：${err.message}</div>`;
             }
         }
@@ -1786,49 +1770,36 @@ ${fields.stop.value || '*尚未定義*'}
                     const fileRef = ref(storage, fullPath);
                     await deleteObject(fileRef);
                     await loadProjectFiles(); 
-                } catch(e) {
-                    UI.showAlert("刪除失敗：" + e.message, "錯誤");
-                } finally {
-                    UI.hideLoader();
-                }
+                } catch(e) { UI.showAlert("刪除失敗：" + e.message, "錯誤"); } 
+                finally { UI.hideLoader(); }
             });
         };
 
-        // Robust JSON Parsing Helper
+        // 健全容錯解析 (Self-Healing JSON Parsing Pipeline)
         function extractAndParseJSON(rawText) {
             if (!rawText) throw new Error("AI 回傳內容為空");
             let cleanText = rawText.trim();
             
-            // Auto strip markdown code fences if model hallucinated them
-            if (cleanText.startsWith("```json")) {
-                cleanText = cleanText.substring(7);
-            } else if (cleanText.startsWith("```")) {
-                cleanText = cleanText.substring(3);
-            }
-            if (cleanText.endsWith("```")) {
-                cleanText = cleanText.substring(0, cleanText.length - 3);
-            }
+            if (cleanText.startsWith("```json")) cleanText = cleanText.substring(7);
+            else if (cleanText.startsWith("```")) cleanText = cleanText.substring(3);
+            if (cleanText.endsWith("```")) cleanText = cleanText.substring(0, cleanText.length - 3);
             cleanText = cleanText.trim();
 
             try {
-                // Happy path: strict direct parse
                 return JSON.parse(cleanText);
             } catch (err) {
-                console.warn("直接解析 JSON 失敗，啟動正則表達式提取容錯機制...", err);
-                // Fallback: extract substring between the first { and last }
+                console.warn("直接解析失敗，啟動容錯正則提取機制...", err);
                 const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
                 if (jsonMatch) {
                     try {
                         return JSON.parse(jsonMatch[0]);
-                    } catch (regexErr) {
-                        throw new Error("AI 回應中的 JSON 結構損毀且無法自動修復，請重試。");
-                    }
+                    } catch (regexErr) { throw new Error("AI 回應中的 JSON 結構損毀嚴重且無法自動修復，請重試。"); }
                 }
                 throw new Error("無法從 AI 回應中解析出有效的資料格式。");
             }
         }
 
-        // AI Draft Generation (Using gemini-3.8-flash with hardened prompt)
+        // AI Draft Generation (Gemini 3.8 Flash)
         document.getElementById('btn-ai-draft').addEventListener('click', async () => {
             if(locks.isGeneratingAI) return;
             
@@ -1849,7 +1820,6 @@ ${fields.stop.value || '*尚未定義*'}
             UI.showLoader("AI 架構師思考中... (呼叫 gemini-3.8-flash)");
             locks.isGeneratingAI = true;
             
-            // Hardened System Prompt with Few-Shot and strict boundary instructions
             const promptText = `你是一位專業的 AI 架構顧問，請根據使用者的任務描述，使用「TONY Skill 七字訣」產出標準工作流程草稿。
 
 【使用者任務描述】
@@ -1882,10 +1852,7 @@ ${desc}
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         contents: [{ parts: [{ text: promptText }] }],
-                        generationConfig: { 
-                            responseMimeType: "application/json",
-                            temperature: 0.2 // Lower temp for more stable structural output
-                        }
+                        generationConfig: { responseMimeType: "application/json", temperature: 0.2 }
                     })
                 });
 
@@ -1896,8 +1863,6 @@ ${desc}
 
                 const data = await response.json();
                 const rawResponseText = data.candidates[0].content.parts[0].text;
-                
-                // Use robust parsing pipeline
                 const result = extractAndParseJSON(rawResponseText);
 
                 fields.triggerPos.value = result.triggerPos || '';
@@ -1910,11 +1875,10 @@ ${desc}
                 fields.validation.value = result.validation || '';
                 fields.stop.value = result.stop || '';
 
-                if(!fields.name.value) fields.name.value = "AI_Draft_" + new Date().getTime().toString().slice(-4);
+                if(!fields.name.value) fields.name.value = "AI-Draft-" + new Date().getTime().toString().slice(-4);
                 window.debouncedUpdateMarkdown();
                 UI.showAlert("AI 草稿已生成！請切換左側步驟逐一審閱與修改。", "生成成功");
             } catch (err) {
-                console.error("AI 容錯生成異常:", err);
                 UI.showAlert("AI 生成失敗：" + err.message, "系統錯誤");
             } finally {
                 locks.isGeneratingAI = false;
@@ -1922,17 +1886,15 @@ ${desc}
             }
         });
 
-        // V2.0 ZIP Export with Cloud Files Included (Strict Kebab-case Parent Folder Implementation)
+        // V2.0 ZIP Export with Frontmatter & Strict Structure
         document.getElementById('btn-export-zip').addEventListener('click', async () => {
-            // 強制將名稱轉換為 Kebab-case，並確保符合 63 字元限制
             const skillName = formatKebabCase(fields.name.value);
-            
             const zip = new JSZip();
             
-            // 建立一個以 Kebab-case 命名的「主資料夾」，將所有內容包裝在內，符合標準規範
+            // 建立 Kebab-case 主資料夾
             const mainFolder = zip.folder(skillName);
             
-            // 準備 SKILL.md 內容，確保描述長度不超過 Gemini 上限 1024 字元，且不會破壞 YAML
+            // 嚴格裁切描述，避免 YAML 錯誤
             const safeDesc = fields.desc.value.trim().replace(/\n/g, ' ').substring(0, 1024);
             const frontmatter = `---\nname: ${skillName}\ndescription: ${safeDesc}\nversion: 2.0.0\n---\n\n`;
             const mdContent = frontmatter + generateMarkdownString();
@@ -1940,14 +1902,12 @@ ${desc}
             // 將 SKILL.md 置於主資料夾內
             mainFolder.file("SKILL.md", mdContent);
             
-            // 所有支援部門也都建在主資料夾下
             const refFolder = mainFolder.folder("references");
             const scriptFolder = mainFolder.folder("scripts");
             const assetFolder = mainFolder.folder("assets");
             mainFolder.folder("agents").file("openai.yaml", "name: " + skillName + "\n# Define UI badges and startup policies here");
 
             UI.showLoader("封裝檔案中，這可能需要一點時間...");
-            
             let downloadErrors = [];
             
             if (currentProject && currentProject.downloadableFiles && currentProject.downloadableFiles.length > 0) {
@@ -1962,10 +1922,7 @@ ${desc}
                         else if(f.category === 'scripts') scriptFolder.file(f.name, blob);
                         else if(f.category === 'assets') assetFolder.file(f.name, blob);
                         
-                    } catch(e) {
-                        console.error(`Error downloading ${f.name}:`, e);
-                        downloadErrors.push(f.name);
-                    }
+                    } catch(e) { downloadErrors.push(f.name); }
                 }
             }
             
@@ -1979,7 +1936,6 @@ ${desc}
                 const url = window.URL.createObjectURL(content);
                 const a = document.createElement("a");
                 a.href = url;
-                // ZIP 檔名也採用 kebab-case 格式
                 a.download = `${skillName}.zip`;
                 document.body.appendChild(a);
                 a.click();
@@ -1989,9 +1945,7 @@ ${desc}
                 if(downloadErrors.length > 0) {
                     UI.showAlert(`打包完成，但以下檔案因網路或權限限制未能打包進 ZIP：\n${downloadErrors.join(', ')}\n\n(提示：請確認已透過 Cloud Shell 正確設定 CORS)`, "部分檔案下載失敗");
                 }
-                
             } catch (err) {
-                console.error("ZIP Generation Error", err);
                 UI.showAlert("匯出 ZIP 失敗: " + err.message, "錯誤");
             } finally {
                 UI.hideLoader();
@@ -2072,7 +2026,6 @@ ${desc}
                 });
                 
             } catch(e) {
-                console.error("載入管理員數據失敗", e);
                 tbody.innerHTML = `<tr><td colspan="6" class="text-center py-12 text-red-500 bg-red-50"><i class="fas fa-exclamation-triangle mb-2 text-xl"></i><br>無法讀取資料: ${e.message}</td></tr>`;
             }
         }
@@ -2100,36 +2053,29 @@ ${desc}
             });
         };
 
-        // CSV Export with BOM
+        // CSV Export
         document.getElementById('btn-export-csv').addEventListener('click', () => {
             if(!window.adminUserList || window.adminUserList.length === 0) {
                 UI.showAlert("目前沒有資料可以匯出");
                 return;
             }
-            
             const header = ["姓名", "Email", "身分", "權限", "登入次數", "註冊時間", "最後登入"];
             const rows = window.adminUserList.map(u => [
-                `"${u.realName || ''}"`,
-                `"${u.email || ''}"`,
-                `"${u.identity || ''}"`,
-                `"${u.role || ''}"`,
-                u.loginCount || 0,
-                `"${u.createdAt ? u.createdAt.toDate().toLocaleString() : ''}"`,
-                `"${u.lastLoginAt ? u.lastLoginAt.toDate().toLocaleString() : ''}"`
+                `"${u.realName || ''}"`, `"${u.email || ''}"`, `"${u.identity || ''}"`, `"${u.role || ''}"`, u.loginCount || 0,
+                `"${u.createdAt ? u.createdAt.toDate().toLocaleString() : ''}"`, `"${u.lastLoginAt ? u.lastLoginAt.toDate().toLocaleString() : ''}"`
             ]);
-            
             const csvContent = [header.join(','), ...rows.map(r => r.join(','))].join('\n');
             const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.setAttribute("href", url);
-            link.setAttribute("download", `TONY_Skill_Builder_Members_${new Date().toISOString().split('T')[0]}.csv`);
+            link.setAttribute("download", `TONY_Skill_Members_${new Date().toISOString().split('T')[0]}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         });
 
-        // AI Business Report Generation (Using gemini-3.8-flash)
+        // AI Business Report (Gemini 3.8 Flash)
         document.getElementById('btn-generate-report').addEventListener('click', async () => {
             if (locks.isGeneratingAI) return;
 
@@ -2143,13 +2089,8 @@ ${desc}
             const startDate = document.getElementById('ai-report-start').value;
             const endDate = document.getElementById('ai-report-end').value;
             
-            if(!startDate || !endDate) {
-                UI.showAlert("請選擇分析的起訖日期"); return;
-            }
-            
-            if(!window.adminUserList || window.adminUserList.length === 0) {
-                UI.showAlert("目前無會員資料可供分析"); return;
-            }
+            if(!startDate || !endDate) { UI.showAlert("請選擇分析的起訖日期"); return; }
+            if(!window.adminUserList || window.adminUserList.length === 0) { UI.showAlert("目前無會員資料可供分析"); return; }
 
             const startT = new Date(startDate).getTime();
             const endT = new Date(endDate).getTime() + 86400000; 
@@ -2162,9 +2103,7 @@ ${desc}
             
             const stats = {
                 totalNewUsers: filteredUsers.length,
-                roleBreakdown: {},
-                identityBreakdown: {},
-                totalLoginsInRange: 0
+                roleBreakdown: {}, identityBreakdown: {}, totalLoginsInRange: 0
             };
             
             filteredUsers.forEach(u => {
@@ -2176,7 +2115,6 @@ ${desc}
             UI.showLoader("AI 正在深度分析數據中... (呼叫 gemini-3.8-flash)");
             locks.isGeneratingAI = true;
             
-            // Hardened Prompt to ensure strict Markdown output without conversational fluff
             const promptText = `你是一位專業的商業數據分析顧問。以下是「TONY Skill Builder」平台在 ${startDate} 到 ${endDate} 期間的會員註冊與活躍數據。
 請幫我撰寫一份結構專業、具洞察力的「商業分析報告」。
 
@@ -2188,23 +2126,14 @@ ${desc}
 
 【報告要求嚴格限制】
 1. 請嚴格使用 Markdown 格式輸出。
-2. 結構必須包含：
-   - 執行摘要 (Executive Summary)
-   - 成長動能分析 (Growth Analysis)
-   - 族群輪廓洞察 (Demographic Insights)
-   - 針對 TONY 老師的下一步商業建議 (Next Step Recommendations)
-3. 絕對禁止輸出任何問候語 (如"你好") 或解釋性冗言，直接輸出報告本文，確保解析與呈現乾淨。`;
+2. 結構必須包含：執行摘要、成長動能分析、族群輪廓洞察、下一步商業建議。
+3. 絕對禁止輸出任何問候語或解釋性冗言，直接輸出報告本文。`;
 
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        contents: [{ parts: [{ text: promptText }] }],
-                        generationConfig: {
-                            temperature: 0.4
-                        }
-                    })
+                    body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }], generationConfig: { temperature: 0.4 } })
                 });
 
                 if (!response.ok) {
@@ -2215,7 +2144,6 @@ ${desc}
                 const data = await response.json();
                 let reportMd = data.candidates[0].content.parts[0].text;
                 
-                // Clean any stray markdown fencing if model misbehaves despite instructions
                 if (reportMd.startsWith("```markdown")) reportMd = reportMd.substring(11);
                 else if (reportMd.startsWith("```")) reportMd = reportMd.substring(3);
                 if (reportMd.endsWith("```")) reportMd = reportMd.substring(0, reportMd.length - 3);
@@ -2225,7 +2153,6 @@ ${desc}
                 UI.show(document.getElementById('btn-export-word'));
                 
             } catch (err) {
-                console.error("Report Generation Error:", err);
                 UI.showAlert("AI 報告生成失敗：" + err.message, "系統錯誤");
             } finally {
                 locks.isGeneratingAI = false;
